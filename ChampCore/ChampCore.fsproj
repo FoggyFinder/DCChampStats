@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="Algorand2" Version="2.0.0.2023041509" />
+		<PackageReference Include="Donald" Version="10.1.0" />
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<Compile Include="Library.fs" />
+		<Compile Include="Blockchain.fs" />
+		<Compile Include="DataAccess.fs" />
+		<Compile Include="Requests.fs" />
+	</ItemGroup>
+
+</Project>

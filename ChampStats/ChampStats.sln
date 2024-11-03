@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34622.214
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "ChampStats", "ChampStats.fsproj", "{BA76D134-751E-4421-8E32-7BD1A8CF1E61}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "ChampCore", "..\ChampCore\ChampCore.fsproj", "{9AAED325-5FB2-4DB8-BF7F-4842895A760B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BA76D134-751E-4421-8E32-7BD1A8CF1E61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA76D134-751E-4421-8E32-7BD1A8CF1E61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA76D134-751E-4421-8E32-7BD1A8CF1E61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA76D134-751E-4421-8E32-7BD1A8CF1E61}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9AAED325-5FB2-4DB8-BF7F-4842895A760B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9AAED325-5FB2-4DB8-BF7F-4842895A760B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9AAED325-5FB2-4DB8-BF7F-4842895A760B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9AAED325-5FB2-4DB8-BF7F-4842895A760B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {44E96312-1BA3-4396-9AB8-6162EC57AF62}
+	EndGlobalSection
+EndGlobal
