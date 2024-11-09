@@ -34,6 +34,21 @@ type ChampStats = {
     MostLosesAgainst: Champ option
 }
 
+type ChampProperties = {
+    Armour: string
+    Background: string
+    Extra: string
+    Head: string
+    Magic: string
+    Skin: string
+    Weapon: string
+}
+
+type ChampDetailed = {
+    Stats: ChampStats
+    Properties: ChampProperties
+}
+
 [<RequireQualifiedAccess>]
 module Utils =
     open System

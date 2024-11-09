@@ -174,6 +174,14 @@ let getChampStats(champId:uint64) =
         calcChampStats champId
     else None
 
+let getChampDetails(champId:uint64) =
+    if allChamps.Contains champId then
+        Blockchain.tryGetChampInfo champId
+        |> Option.bind(fun cp ->
+            getChampStats champId
+            |> Option.map(fun cs -> { Stats = cs; Properties = cp }))
+    else None
+
 let getBattle(battleId:uint64) =
     if not <| storage.BattleExists battleId then
         Blockchain.getBattle battleId
