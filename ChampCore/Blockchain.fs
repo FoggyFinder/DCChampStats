@@ -86,3 +86,28 @@ let getAccountCreatedAssets(wallet:string) =
                 return! getAssets r.NextToken acc'
         }
     getAssets null Seq.empty |> Async.RunSynchronously
+
+open Newtonsoft.Json.Linq
+let tryGetChampInfo(assetId:uint64) =
+    try
+        async {
+            let! d = lookUpApi.lookupAssetByIDAsync(assetId) |> Async.AwaitTask
+            let! txs = lookUpApi.lookupAssetTransactionsAsync(assetId, round = d.Asset.CreatedAtRound, txType = "acfg") |> Async.AwaitTask
+            return txs
+        } |> Async.RunSynchronously
+        |> fun t -> t.Transactions
+        |> Seq.tryHead
+        |> Option.map(fun tx ->
+            let json = tx.Note |> System.Text.ASCIIEncoding.ASCII.GetString |> JObject.Parse
+            let properties = json.["properties"]
+            {
+                Armour = properties.Value<string>("Armour")
+                Background = properties.Value<string>("Background")
+                Extra = properties.Value<string>("Extra")
+                Head = properties.Value<string>("Head")
+                Magic = properties.Value<string>("Magic")
+                Skin = properties.Value<string>("Skin")
+                Weapon = properties.Value<string>("Weapon")
+            }
+        )
+    with _ -> None

@@ -54,7 +54,7 @@ webHost [||] {
         get Route.champ (fun ctx ->
             let route = Request.getRoute ctx
             let champId = uint64 <| route.GetInt64 "champ"
-            Champs.Requests.getChampStats champId
+            Champs.Requests.getChampDetails champId
             |> Champs.Pages.Champs.champPage
             |> UI.layout "Champ info"
             |> fun html -> Response.ofHtml html ctx)

@@ -3,12 +3,14 @@
 open Falco.Markup
 open Champs.Core
 
-let champPage (champStatso: ChampStats option) =
+let champPage (champDetailedO: ChampDetailed option) =
     [
-        match champStatso with
+        match champDetailedO with
         | None -> yield Text.raw "Champ either not found or request can't be evaluated at the moment. Verify id and try later"
-        | Some chst  ->
+        | Some chd  ->
+            let chst = chd.Stats
             yield Text.h1 $"{chst.Info.Name} stats"
+            
             let propertiesTableHeader =
                 Elem.tr [] [
                     Elem.th [] [ Text.raw "Property" ]
@@ -16,16 +18,6 @@ let champPage (champStatso: ChampStats option) =
                 ]
                     
             let propertiesTableItems = [
-                Elem.tr [] [
-                    Elem.td [] [ Text.raw $"Id" ]
-                    Elem.td [] [ Text.raw $"{chst.Info.AssetId}" ]
-                ]
-
-                Elem.tr [] [
-                    Elem.td [] [ Text.raw $"Name" ]
-                    Elem.td [] [ Text.raw $"{chst.Info.Name}" ]
-                ]
-
                 Elem.tr [] [
                     Elem.td [] [ Text.raw $"Battles" ]
                     Elem.td [] [ Text.raw $"{chst.Info.Fights}" ]
@@ -82,10 +74,66 @@ let champPage (champStatso: ChampStats option) =
                     ]
                 ]
             ]
+            let column1 = 
+                Elem.table [] [
+                    yield propertiesTableHeader
+                    yield! propertiesTableItems
+                ]
 
-            yield Elem.table [] [
-                yield propertiesTableHeader
-                yield! propertiesTableItems
+
+            let characteristicsTableHeader =
+                Elem.tr [] [
+                    Elem.th [] [ Text.raw "Property" ]
+                    Elem.th [] [ Text.raw "Value" ]
+                ]
+
+            let characteristics = chd.Properties     
+            let characteristicsTableItems = [
+                Elem.tr [] [
+                    Elem.td [] [ Text.raw $"Armour" ]
+                    Elem.td [] [ Text.raw $"{characteristics.Armour}" ]
+                ]
+
+                Elem.tr [] [
+                    Elem.td [] [ Text.raw $"Background" ]
+                    Elem.td [] [ Text.raw $"{characteristics.Background}" ]
+                ]
+
+                Elem.tr [] [
+                    Elem.td [] [ Text.raw $"Extra" ]
+                    Elem.td [] [ Text.raw $"{characteristics.Extra}" ]
+                ]
+
+                Elem.tr [] [
+                    Elem.td [] [ Text.raw $"Head" ]
+                    Elem.td [] [ Text.raw $"{characteristics.Head}" ]
+                ]
+
+                Elem.tr [] [
+                    Elem.td [] [ Text.raw $"Magic" ]
+                    Elem.td [] [ Text.raw $"{characteristics.Magic}" ]
+                ]
+
+                Elem.tr [] [
+                    Elem.td [] [ Text.raw $"Skin" ]
+                    Elem.td [] [ Text.raw $"{characteristics.Skin}" ]
+                ]
+
+                Elem.tr [] [
+                    Elem.td [] [ Text.raw $"Weapon" ]
+                    Elem.td [] [ Text.raw $"{characteristics.Weapon}" ]
+                ]
+            ]
+
+            let column2 = 
+                Elem.table [] [
+                    yield characteristicsTableHeader
+                    yield! characteristicsTableItems
+                ]
+
+            yield Elem.div [ Attr.class' "row" ] [
+                yield Elem.div [ Attr.class' "column" ] [ yield column1 ]
+                yield Elem.div [ Attr.class' "column" ] [ yield column2 ]
             ]
 
             yield Text.h1 $"Battles"
