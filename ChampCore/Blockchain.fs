@@ -88,26 +88,29 @@ let getAccountCreatedAssets(wallet:string) =
     getAssets null Seq.empty |> Async.RunSynchronously
 
 open Newtonsoft.Json.Linq
+open Ipfs
 let tryGetChampInfo(assetId:uint64) =
-    try
-        async {
-            let! d = lookUpApi.lookupAssetByIDAsync(assetId) |> Async.AwaitTask
-            let! txs = lookUpApi.lookupAssetTransactionsAsync(assetId, round = d.Asset.CreatedAtRound, txType = "acfg") |> Async.AwaitTask
-            return txs
-        } |> Async.RunSynchronously
-        |> fun t -> t.Transactions
-        |> Seq.tryHead
-        |> Option.map(fun tx ->
-            let json = tx.Note |> System.Text.ASCIIEncoding.ASCII.GetString |> JObject.Parse
-            let properties = json.["properties"]
-            {
-                Armour = properties.Value<string>("Armour")
-                Background = properties.Value<string>("Background")
-                Extra = properties.Value<string>("Extra")
-                Head = properties.Value<string>("Head")
-                Magic = properties.Value<string>("Magic")
-                Skin = properties.Value<string>("Skin")
-                Weapon = properties.Value<string>("Weapon")
-            }
-        )
-    with _ -> None
+    async {
+        let! d = lookUpApi.lookupAssetByIDAsync(assetId) |> Async.AwaitTask
+        let! tr = lookUpApi.lookupAssetTransactionsAsync(assetId, round = d.Asset.CreatedAtRound, txType = "acfg") |> Async.AwaitTask
+        return
+            tr.Transactions
+            |> Seq.tryHead
+            |> Option.map(fun tx ->
+                let json = tx.Note |> System.Text.ASCIIEncoding.ASCII.GetString |> JObject.Parse
+                let properties = json.["properties"]
+                let addr = Algorand.Address(d.Asset.Params.Reserve)
+                let cid = Cid(ContentType = "dag-pb", Version = 0, Hash = MultiHash("sha2-256", addr.Bytes))
+                let ipfs = cid.ToString()
+                {
+                    Armour = properties.Value<string>("Armour")
+                    Background = properties.Value<string>("Background")
+                    Extra = properties.Value<string>("Extra")
+                    Head = properties.Value<string>("Head")
+                    Magic = properties.Value<string>("Magic")
+                    Skin = properties.Value<string>("Skin")
+                    Weapon = properties.Value<string>("Weapon")
+                    Ipfs = ipfs
+                }
+            )
+    } |> Async.RunSynchronously

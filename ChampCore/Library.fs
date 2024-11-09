@@ -35,6 +35,7 @@ type ChampStats = {
 }
 
 type ChampProperties = {
+    Ipfs: string
     Armour: string
     Background: string
     Extra: string

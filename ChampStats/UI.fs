@@ -1,6 +1,7 @@
 ﻿module UI
 
 open Falco.Markup
+let [<Literal>] IPFS = "https://ipfs.dark-coin.io/ipfs/"
 
 let layout (title:string) (content : XmlNode list)  =
     Elem.html [ Attr.lang "en"; ] [
