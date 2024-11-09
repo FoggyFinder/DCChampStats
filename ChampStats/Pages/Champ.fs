@@ -10,7 +10,10 @@ let champPage (champDetailedO: ChampDetailed option) =
         | Some chd  ->
             let chst = chd.Stats
             yield Text.h1 $"{chst.Info.Name} stats"
-            
+            yield Elem.img [
+                Attr.class' "champImgBig"
+                Attr.src (UI.IPFS + chd.Properties.Ipfs)
+            ]
             let propertiesTableHeader =
                 Elem.tr [] [
                     Elem.th [] [ Text.raw "Property" ]
