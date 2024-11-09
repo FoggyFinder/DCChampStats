@@ -131,8 +131,15 @@ let private getLeaderBoard (battles:Battle list) =
 
 let getFullLeaderboard() = storage.GetAllBattles() |> getLeaderBoard
 
-let getLeaderBoardForBattles(start:uint64, end': uint64) =
-    storage.GetAllBattles() |> List.filter(fun b -> b.BattleNum >= start && end' >= b.BattleNum) |> getLeaderBoard
+let getLeaderBoardForBattles(start:uint64 option, end': uint64 option) =
+    storage.GetAllBattles()
+    |> fun battles ->
+        if start.IsSome then battles |> List.filter(fun b -> b.BattleNum >= start.Value)
+        else battles
+    |> fun battles ->
+        if end'.IsSome then battles |> List.filter(fun b -> end'.Value >= b.BattleNum)
+        else battles
+    |> getLeaderBoard
 
 let refresh() =
     let lastTracked = storage.GetLastTrackedBattle() |> Option.bind Utils.toUInt64 |> Option.defaultValue 0UL
@@ -187,10 +194,5 @@ let getBattle(battleId:uint64) =
         Blockchain.getBattle battleId
         |> Option.iter processBattle
     storage.TryGetBattle battleId
-
-let getLeaderoard(range:(uint64*uint64) option) =
-    match range with
-    | Some (s, e) -> getLeaderBoardForBattles(s, e)
-    | None -> getFullLeaderboard()
 
 let getBattles() = storage.GetAllBattles()

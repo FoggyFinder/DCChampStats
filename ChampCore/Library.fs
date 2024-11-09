@@ -72,12 +72,15 @@ module Utils =
     let parseRange (str:string) =
         let arr =
             str.Split("-")
-            |> Array.choose(fun v ->
+            |> Array.map(fun v ->
                 match UInt64.TryParse v with
                 | true, i -> Some i
                 | false, _ -> None)
-        if arr.Length <> 2 then None
-        else Some(arr.[0], arr.[1])
+        if arr.Length = 1 then
+            arr |> Array.head, None
+        elif arr.Length = 2 then
+            arr.[0], arr.[1]
+        else None, None
 
     let toUInt64 (str:string) =
         match UInt64.TryParse str with
