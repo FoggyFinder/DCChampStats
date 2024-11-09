@@ -36,7 +36,11 @@ module Route =
     let [<Literal>] leaderboardRange = "leaderboard/{range}"
 
 webHost [||] {
+    use_caching
+    use_compression
     use_static_files
+    
+
     endpoints [
         get Route.index (fun ctx ->
             Champs.Pages.Home.homePage()

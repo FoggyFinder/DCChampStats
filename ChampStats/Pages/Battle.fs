@@ -45,7 +45,7 @@ let battlesPage (battles:Battle list) =
         let battlesTableItems =
             battles
             |> List.sortByDescending(fun b -> b.BattleNum)
-            |> List.collect(fun b ->
+            |> List.mapi(fun i b ->
                 [
                     Elem.tr [] [
                         Elem.td [] [ Elem.a [ Attr.href $"/Battles/{b.BattleNum}" ] [ Text.raw $"{b.BattleNum}" ] ]
@@ -57,11 +57,12 @@ let battlesPage (battles:Battle list) =
                         ]
                         Elem.td [] [ Text.raw $"{b.Wager}" ]
                     ]
-                                
-                    Elem.tr [] [
-                        Elem.td [ Attr.colspan "4" ] [ Text.raw $"{b.Description}" ]
-                    ]
+                    if i <= 10 then            
+                        Elem.tr [] [
+                            Elem.td [ Attr.colspan "4" ] [ Text.raw $"{b.Description}" ]
+                        ]
                 ])
+            |> List.concat
 
         yield Elem.table [] [
             yield battlesTableHeader

@@ -151,7 +151,7 @@ let champPage (champDetailedO: ChampDetailed option) =
 
             let battlesTableItems =
                 chst.Battles
-                |> List.collect(fun b ->
+                |> List.mapi(fun i b ->
                     let opponent, bres =
                         if b.Winner.AssetId <> chst.Info.AssetId then b.Winner, "-"
                         else b.Loser, "+"
@@ -164,12 +164,12 @@ let champPage (champDetailedO: ChampDetailed option) =
                             Elem.td [] [ Text.raw $"{b.Wager}" ]
                             Elem.td [] [ Text.raw $"{bres}" ]
                         ]
-                                
-                        Elem.tr [] [
-                            Elem.td [ Attr.colspan "4" ] [ Text.raw $"{b.Description}" ]
-                        ]
+                        if i <= 10 then        
+                            Elem.tr [] [
+                                Elem.td [ Attr.colspan "4" ] [ Text.raw $"{b.Description}" ]
+                            ]
                     ])
-
+                |> List.concat
             yield Elem.table [] [
                 yield battlesTableHeader
                 yield! battlesTableItems

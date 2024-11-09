@@ -32,3 +32,4 @@ _ReSharper*/
 packages/
 [Pp]ublishProfiles*/
 *.sqlite
+/ChampStats/.config/dotnet-tools.json
