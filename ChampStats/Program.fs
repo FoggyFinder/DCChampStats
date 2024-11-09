@@ -75,18 +75,25 @@ webHost [||] {
             |> fun html -> Response.ofHtml html ctx)
 
         get Route.leaderboard (fun ctx ->
-            Champs.Requests.getLeaderoard None
-            |> Champs.Pages.Leaderboard.leaderBoardPage
-            |> UI.layout "Full Leaderboard"
+            let title = "Full Leaderboard"
+            Champs.Requests.getFullLeaderboard()
+            |> Champs.Pages.Leaderboard.leaderBoardPage title
+            |> UI.layout title
             |> fun html -> Response.ofHtml html ctx)
 
         get Route.leaderboardRange (fun ctx ->
             let route = Request.getRoute ctx
             let rawRange = route.GetString "range"
             let range = Champs.Core.Utils.parseRange rawRange
-            let title = ("Leaderboard" + match range with | Some (x, y) -> $"([{x}..{y}]" | None -> "")
-            Champs.Requests.getLeaderoard range
-            |> Champs.Pages.Leaderboard.leaderBoardPage
+            let title =
+                match range with
+                | Some x, Some y -> $"({x}..{y})"
+                | Some x, None -> $"({x}..)"
+                | None, Some y -> $"(..{y})"
+                | None, None -> ""
+                |> fun s -> "Leaderboard " + s
+            Champs.Requests.getLeaderBoardForBattles range
+            |> Champs.Pages.Leaderboard.leaderBoardPage title
             |> UI.layout title
             |> fun html -> Response.ofHtml html ctx)
     ]

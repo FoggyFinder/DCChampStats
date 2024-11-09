@@ -3,7 +3,7 @@
 open Falco.Markup
 open Champs.Core
 
-let leaderBoardPage (leaderboard:ChampInfo list) =
+let leaderBoardPage (title:string) (leaderboard:ChampInfo list) =
     [
         if leaderboard.IsEmpty then
             yield Text.raw "No battles are found"
@@ -26,7 +26,7 @@ let leaderBoardPage (leaderboard:ChampInfo list) =
                         Elem.td [] [ Text.raw $"{ci.Profit}" ]
                     ])
             
-            yield Text.h1 $"Leaderboard"
+            yield Text.h1 title
 
             yield Elem.table [] [
                 yield battlesTableHeader
