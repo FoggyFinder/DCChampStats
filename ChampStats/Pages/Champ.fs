@@ -175,3 +175,9 @@ let champPage (champDetailedO: ChampDetailed option) =
                 yield! battlesTableItems
             ]
      ]
+
+let champsPage (champs: Champs.Core.ChampInfo list) =
+    [
+        yield Text.p $"All champs info"
+        yield UI.getChampInfoTable champs
+    ]

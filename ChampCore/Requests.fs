@@ -173,6 +173,13 @@ let getChampsForWallet(wallet:string) =
             |> storage.AddOrInsertChamp
         getChampInfo m.AssetId)
     |> Seq.toList
+    |> List.sortByDescending(fun c -> c.Profit)
+
+let getAllChampsInfo() =
+    storage.GetAllChamps()
+    |> List.filter(fun c -> allChamps.Contains c.AssetId)
+    |> List.choose(fun c -> getChampInfo c.AssetId)
+    |> List.sortByDescending(fun c -> c.Profit)
 
 let getChampStats(champId:uint64) =
     if allChamps.Contains champId then

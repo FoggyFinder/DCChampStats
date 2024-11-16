@@ -23,3 +23,27 @@ let layout (title:string) (content : XmlNode list)  =
     ]
 
 
+let getChampInfoTable (champs:Champs.Core.ChampInfo list) =
+    let header =
+        Elem.tr [ ] [
+            Elem.th [ ] [ Text.raw "" ]
+            Elem.th [ ] [ Text.raw "Name" ]
+            Elem.th [ ] [ Text.raw "Wins" ]
+            Elem.th [ ] [ Text.raw "Loses" ]
+            Elem.th [ ] [ Text.raw "Fights" ]
+            Elem.th [ ] [ Text.raw "Profit" ]
+        ]
+    let items = 
+        champs |> List.mapi(fun i ch ->
+            Elem.tr [] [
+                Elem.td [ ] [ Text.raw $"{i + 1}" ]
+                Elem.td [ ] [ Elem.a [ Attr.href $"/Champs/{ch.AssetId}" ] [ Text.raw $"{ch.Name}" ] ]
+                Elem.td [ ] [ Text.raw $"{ch.Wins}" ]
+                Elem.td [ ] [ Text.raw $"{ch.Loses}" ]
+                Elem.td [ ] [ Text.raw $"{ch.Fights}" ]
+                Elem.td [ ] [ Text.raw $"{ch.Profit}" ]
+        ])
+    Elem.table [ ] [
+        yield header
+        yield! items
+    ]

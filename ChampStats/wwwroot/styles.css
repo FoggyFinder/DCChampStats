@@ -53,19 +53,6 @@ th, td {
     padding: 10px;
 }
 
-
-th.w-10 {
-    width: 10%
-}
-
-th.w-20 {
-    width: 10%
-}
-
-th.w-50 {
-    width: 50%
-}
-
 /* https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_table_side_by_side2 */
 * {
     box-sizing: border-box;

@@ -28,6 +28,7 @@ module Route =
 
     let [<Literal>] wallet = "/wallets/{wallet}"
     let [<Literal>] champ = "champs/{champ}"
+    let [<Literal>] champs = "champs"
 
     let [<Literal>] battle = "battles/{battle}"
     let [<Literal>] battles = "battles"
@@ -64,6 +65,12 @@ webHost [||] {
             |> UI.layout "Champ info"
             |> fun html -> Response.ofHtml html ctx)
         
+        get Route.champs (fun ctx ->
+            Champs.Requests.getAllChampsInfo()
+            |> Champs.Pages.Champs.champsPage
+            |> UI.layout "Champs info"
+            |> fun html -> Response.ofHtml html ctx)
+
         get Route.battle (fun ctx ->
             let route = Request.getRoute ctx
             let battleId = uint64 <| route.GetInt64 "battle"
