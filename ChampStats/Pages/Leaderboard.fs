@@ -21,7 +21,7 @@ let leaderBoardPage (title:string) (leaderboard:ChampInfo list) =
                     |> List.mapi(fun i ci ->
                     Elem.tr [] [
                         Elem.td [] [ Text.raw ((i + 1).ToString()) ]
-                        Elem.td [] [ Elem.a [ Attr.href $"/Champs/{ci.AssetId}" ] [ Text.raw $"{ci.Name} ({ci.AssetId})" ] ]
+                        Elem.td [] [ Elem.a [ Attr.href $"/Champs/{ci.AssetId}" ] [ Text.raw $"{ci.Name}" ] ]
                         Elem.td [] [ Text.raw $"{ci.Wins - ci.Loses}" ]
                         Elem.td [] [ Text.raw $"{ci.Profit}" ]
                     ])

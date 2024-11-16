@@ -47,7 +47,7 @@ let champPage (champDetailedO: ChampDetailed option) =
                         match chst.MostFightsWith with
                         | Some champ ->
                             Elem.a [ Attr.href $"/Champs/{champ.AssetId}" ] [
-                                Text.raw $"{champ.Name} ({champ.AssetId})" 
+                                Text.raw $"{champ.Name}" 
                             ]
                         | None -> Text.raw ""
                     ]
@@ -59,7 +59,7 @@ let champPage (champDetailedO: ChampDetailed option) =
                         match chst.MostWinsAgainst with
                         | Some champ ->
                             Elem.a [ Attr.href $"/Champs/{champ.AssetId}" ] [
-                                Text.raw $"{champ.Name} ({champ.AssetId})"
+                                Text.raw $"{champ.Name}"
                             ]
                         | None -> Text.raw ""
                     ]
@@ -71,7 +71,7 @@ let champPage (champDetailedO: ChampDetailed option) =
                         match chst.MostLosesAgainst with
                         | Some champ ->
                             Elem.a [ Attr.href $"/Champs/{champ.AssetId}" ] [
-                                Text.raw $"{champ.Name} ({champ.AssetId})" 
+                                Text.raw $"{champ.Name}" 
                             ]
                         | None -> Text.raw ""
                     ]
@@ -159,7 +159,7 @@ let champPage (champDetailedO: ChampDetailed option) =
                         Elem.tr [] [
                             Elem.td [] [ Elem.a [ Attr.href $"/Battles/{b.BattleNum}" ] [ Text.raw $"{b.BattleNum}" ] ]
                             Elem.td [] [ Elem.a [ Attr.href $"/Champs/{opponent.AssetId}" ] [ 
-                                Text.raw $"{opponent.Name} ({opponent.AssetId})" ]
+                                Text.raw $"{opponent.Name}" ]
                             ]
                             Elem.td [] [ Text.raw $"{b.Wager}" ]
                             Elem.td [] [ Text.raw $"{bres}" ]

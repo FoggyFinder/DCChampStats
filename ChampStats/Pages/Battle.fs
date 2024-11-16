@@ -18,12 +18,12 @@ let battlePage (battleo:Battle option) =
 
                   Elem.tr [] [
                     Elem.td [] [ 
-                        Elem.a [ Attr.href $"/Champs/{battle.Winner.AssetId}" ] [ Text.raw $"{battle.Winner.Name} ({battle.Winner.AssetId})" ]
+                        Elem.a [ Attr.href $"/Champs/{battle.Winner.AssetId}" ] [ Text.raw $"{battle.Winner.Name}" ]
                     ]
                     Elem.td [] [ Text.raw $"{battle.Description}" ]
                     Elem.td [] [
                         Elem.a [ Attr.href $"/Champs/{battle.Loser.AssetId}" ] [ 
-                            Text.raw $"{battle.Loser.Name} ({battle.Loser.AssetId})"
+                            Text.raw $"{battle.Loser.Name}"
                         ]
                      ]
                   ]
@@ -50,10 +50,10 @@ let battlesPage (battles:Battle list) =
                     Elem.tr [] [
                         Elem.td [] [ Elem.a [ Attr.href $"/Battles/{b.BattleNum}" ] [ Text.raw $"{b.BattleNum}" ] ]
                         Elem.td [] [ Elem.a [ Attr.href $"/Champs/{b.Winner.AssetId}" ] [ 
-                            Text.raw $"{b.Winner.Name} ({b.Winner.AssetId})" ]
+                            Text.raw $"{b.Winner.Name}" ]
                         ]
                         Elem.td [] [ Elem.a [ Attr.href $"/Champs/{b.Loser.AssetId}" ] [ 
-                            Text.raw $"{b.Loser.Name} ({b.Loser.AssetId})" ]
+                            Text.raw $"{b.Loser.Name}" ]
                         ]
                         Elem.td [] [ Text.raw $"{b.Wager}" ]
                     ]
