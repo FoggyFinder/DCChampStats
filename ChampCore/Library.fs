@@ -1,5 +1,11 @@
 ﻿namespace Champs.Core
 
+type Contributor = {
+    Name: string
+    Img: string
+    Url: string
+}
+
 type Champ = {
     AssetId: uint64
     Name: string
@@ -69,6 +75,19 @@ module Utils =
             |> Some
         with e ->
             None
+
+    let getListOfContributors(json:string) =
+        try
+            JArray.Parse(json)
+            |> Seq.map(fun jObj ->
+                {
+                    Name = jObj.Value<string>("login")
+                    Img = jObj.Value<string>("avatar_url")
+                    Url = jObj.Value<string>("html_url")
+                })
+            |> Seq.toList
+        with e ->
+            []
 
     let parseRange (str:string) =
         let arr =

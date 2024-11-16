@@ -4,6 +4,7 @@ open Champs.Blockchain
 open Champs.Db
 
 open Champs.Core
+open System.Net.Http
 
 
 let private storage = SqliteStorage("Data Source=dcchamps1.sqlite; Cache=Shared;Foreign Keys = True")
@@ -196,3 +197,19 @@ let getBattle(battleId:uint64) =
     storage.TryGetBattle battleId
 
 let getBattles() = storage.GetAllBattles()
+let client = new HttpClient()
+let getContributors() =
+    async {
+        try
+            let uri = $"https://api.github.com/repos/FoggyFinder/DCChampStats/contributors?anon=1"
+            use request = new System.Net.Http.HttpRequestMessage()
+            request.Method <- System.Net.Http.HttpMethod.Get
+            request.Headers.UserAgent.Add(Headers.ProductInfoHeaderValue(Headers.ProductHeaderValue("DCChampStats")))
+            request.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"))
+            request.RequestUri <- System.Uri(uri)
+            let! response = client.SendAsync(request) |> Async.AwaitTask
+            let! content = response.Content.ReadAsStringAsync() |> Async.AwaitTask
+            return Utils.getListOfContributors content
+        with exp ->
+            return []
+    } |> Async.RunSynchronously

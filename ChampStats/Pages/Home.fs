@@ -1,8 +1,9 @@
 ﻿module Champs.Pages.Home
 
 open Falco.Markup
+open Champs.Core
 
-let homePage() =
+let homePage(contributors: Contributor list) =
     [
         yield Text.h1 $"Tool for tracking DarkCoin Champions NFT battles."
         yield Elem.hr []
@@ -51,13 +52,27 @@ let homePage() =
             ]
         ]
         yield Elem.hr []
-
-        yield Text.p "Contributors:"
-        yield Elem.ul [] [
-            yield Elem.li [] [
-                yield Text.code "Foggy Finder"
-            ]
+        yield Elem.p [] [
+            yield Text.raw "Source code is available "
+            yield Elem.a [ Attr.href "https://github.com/FoggyFinder/DCChampStats" ]
+                    [ Text.raw "on github" ]
         ]
+        yield Text.p "Contributors:"
+        let contributors =
+            contributors
+            |> List.map(fun c ->
+                Elem.li [] [
+                    Elem.div [] [
+                        yield Elem.img [
+                            Attr.class' "iconImg"
+                            Attr.src c.Img
+                        ]
+                        yield Elem.a [ Attr.href c.Url ]
+                            [ Text.code c.Name ]
+                        ]
+                ]
+            )
+        yield Elem.ul [] contributors
 
         yield Elem.hr []
 

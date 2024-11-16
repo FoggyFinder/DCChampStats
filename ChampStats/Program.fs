@@ -43,7 +43,8 @@ webHost [||] {
 
     endpoints [
         get Route.index (fun ctx ->
-            Champs.Pages.Home.homePage()
+            Champs.Requests.getContributors()
+            |> Champs.Pages.Home.homePage
             |> UI.layout "Home"
             |> fun html -> Response.ofHtml html ctx)
 
