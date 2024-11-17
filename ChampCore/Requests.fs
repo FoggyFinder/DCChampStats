@@ -11,9 +11,9 @@ let private storage = SqliteStorage("Data Source=dcchamps1.sqlite; Cache=Shared;
 
 let private processBattle (battle:Battle) =
     if storage.ChampExists battle.Winner.AssetId |> not then
-        storage.AddOrInsertChamp battle.Winner
+        storage.AddOrUpdateChamp battle.Winner
     if storage.ChampExists battle.Loser.AssetId |> not then
-        storage.AddOrInsertChamp battle.Loser
+        storage.AddOrUpdateChamp battle.Loser
     if storage.BattleExists battle.BattleNum |> not then
         storage.AddOrUpdateBattle battle
 
@@ -35,13 +35,12 @@ let private getChampInfo (assetId: uint64) : ChampInfo option =
                      Earned = acc.Earned + b.Wager
                 }
             else acc) {
-            AssetId = assetId
-            Name = champ.Name
-            Wins = 0
-            Loses = 0
-            Earned = 0M
-            Losed = 0M
-        })
+                Champ = champ
+                Wins = 0
+                Loses = 0
+                Earned = 0M
+                Losed = 0M
+            })
 
 let private calcChampStats (champId: uint64) : ChampStats option =
     storage.TryGetChamp champId
@@ -68,8 +67,7 @@ let private calcChampStats (champId: uint64) : ChampStats option =
                          Losed = acc.Losed + b.Wager
                     }
                 else acc) {
-                    AssetId = champId
-                    Name = champ.Name
+                    Champ = champ
                     Wins = 0
                     Loses = 0
                     Earned = 0M
@@ -120,15 +118,14 @@ let private getLeaderBoard (battles:Battle list) =
         let ch = kv.Key
         let (w, l, earned, losed) = kv.Value
         {
-            AssetId = ch.AssetId
-            Name = ch.Name
+            Champ = ch
             Wins = w
             Loses = l
             Earned = earned
             Losed = losed
         })
     |> Seq.toList
-    |> List.sortByDescending(fun ci -> ci.Profit, - int64 ci.AssetId)
+    |> List.sortByDescending(fun ci -> ci.Profit, - int64 ci.Champ.AssetId)
 
 let getFullLeaderboard() = storage.GetAllBattles() |> getLeaderBoard
 
@@ -169,8 +166,10 @@ let getChampsForWallet(wallet:string) =
     |> Seq.filter(fun m -> allChamps.Contains m.AssetId)
     |> Seq.choose(fun m ->
         if not <| storage.ChampExists m.AssetId then
-            { Name = Blockchain.getAssetName m.AssetId; AssetId = m.AssetId }
-            |> storage.AddOrInsertChamp
+            let ipfs = Blockchain.tryGetIpfs m.AssetId
+            let name = Blockchain.getAssetName m.AssetId
+            { Name = name; AssetId = m.AssetId; Ipfs = ipfs }
+            |> storage.AddOrUpdateChamp
         getChampInfo m.AssetId)
     |> Seq.toList
     |> List.sortByDescending(fun c -> c.Profit)
@@ -181,11 +180,16 @@ let getAllChampsInfo() =
     |> List.choose(fun c -> getChampInfo c.AssetId)
     |> List.sortByDescending(fun c -> c.Profit)
 
+let addOrUpdateChamp (champ:Champ) =
+    champ |> storage.AddOrUpdateChamp
+
 let getChampStats(champId:uint64) =
     if allChamps.Contains champId then
         if not <| storage.ChampExists champId then
-            { Name = Blockchain.getAssetName champId; AssetId = champId }
-            |> storage.AddOrInsertChamp
+            let ipfs = Blockchain.tryGetIpfs champId
+            let name = Blockchain.getAssetName champId
+            { Name = name; AssetId = champId; Ipfs = ipfs }
+            |> addOrUpdateChamp
         calcChampStats champId
     else None
 
@@ -193,6 +197,12 @@ let getChampDetails(champId:uint64) =
     if allChamps.Contains champId then
         Blockchain.tryGetChampInfo champId
         |> Option.bind(fun cp ->
+            // check that ipfs is up to date
+            storage.TryGetChamp champId
+            |> Option.iter(fun ch ->
+                if ch.Ipfs.IsNone || ch.Ipfs.Value <> cp.Ipfs then
+                    { ch with Ipfs = Some cp.Ipfs }
+                    |> addOrUpdateChamp)
             getChampStats champId
             |> Option.map(fun cs -> { Stats = cs; Properties = cp }))
     else None
@@ -204,6 +214,10 @@ let getBattle(battleId:uint64) =
     storage.TryGetBattle battleId
 
 let getBattles() = storage.GetAllBattles()
+let champsWithoutIPFS() =
+    storage.ChampsWithoutIPFS()
+    |> List.filter(fun c -> allChamps.Contains c.AssetId)
+
 let client = new HttpClient()
 let getContributors() =
     async {

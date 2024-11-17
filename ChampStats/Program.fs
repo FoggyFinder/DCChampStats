@@ -6,11 +6,26 @@ open Falco.Routing
 open Falco.HostBuilder
 open System.Threading
 
-async {
-    Champs.Requests.refresh()
-} |> Async.Start
+let ct1 = new CancellationTokenSource()
+let updateIpfs = 
+    async {
+        Champs.Requests.refresh()
+        let xs = Champs.Requests.champsWithoutIPFS()
+        xs.Length |> printfn "%i champ's w/t ipfs"
+        for (i, c) in xs |> Seq.indexed do
+            printfn "Processing %i champ" i
+            try
+                Champs.Blockchain.tryGetIpfs c.AssetId
+                |> Option.iter(fun ipfs ->
+                    { c with Ipfs = Some ipfs }
+                    |> Champs.Requests.addOrUpdateChamp)
+            with _ -> ()
+            // to not spam with requests
+            do! Async.Sleep(System.TimeSpan.FromSeconds(15.0))
+}
+Async.Start(updateIpfs, ct1.Token)
 
-let ct = new CancellationTokenSource()
+let ct2 = new CancellationTokenSource()
 let refresh =
     async {
         while true do
@@ -19,7 +34,7 @@ let refresh =
                 Champs.Requests.refresh()
             with _ -> ()
     }
-Async.Start(refresh, ct.Token)
+Async.Start(refresh, ct2.Token)
 
 [<RequireQualifiedAccess>]
 module Route =
@@ -111,4 +126,5 @@ webHost [||] {
     ]
 }
 
-ct.Cancel()
+ct1.Cancel()
+ct2.Cancel()

@@ -11,9 +11,9 @@ let battlePage (battleo:Battle option) =
         | Some battle  ->
             yield 
                 [ Elem.tr [] [
-                    Elem.td [] [ Text.raw "" ]
+                    Elem.td [] [ battle.Winner.Ipfs |> UI.getIpfsImg "champImgAvg" ]
                     Elem.td [] [ Text.raw $"{battle.Wager}" ]
-                    Elem.td [] [ Text.raw "" ]
+                    Elem.td [] [ battle.Loser.Ipfs |> UI.getIpfsImg "champImgAvg" ]
                   ]
 
                   Elem.tr [] [
@@ -57,9 +57,11 @@ let battlesPage (battles:Battle list) =
                         ]
                         Elem.td [] [ Text.raw $"{b.Wager}" ]
                     ]
-                    if i <= 10 then            
+                    if i <= 10 then
                         Elem.tr [] [
-                            Elem.td [ Attr.colspan "4" ] [ Text.raw $"{b.Description}" ]
+                            Elem.td [ ] [ b.Winner.Ipfs |> UI.getIpfsImg "champImgSmall" ]
+                            Elem.td [ Attr.colspan "2" ] [ Text.raw $"{b.Description}" ]
+                            Elem.td [ ] [ b.Loser.Ipfs |> UI.getIpfsImg "champImgSmall" ]
                         ]
                 ])
             |> List.concat

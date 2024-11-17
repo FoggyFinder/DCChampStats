@@ -89,6 +89,20 @@ let getAccountCreatedAssets(wallet:string) =
 
 open Newtonsoft.Json.Linq
 open Ipfs
+
+let tryGetIpfs (assetId: uint64) =
+    async {
+        let! d = lookUpApi.lookupAssetByIDAsync(assetId) |> Async.AwaitTask
+        let! tr = lookUpApi.lookupAssetTransactionsAsync(assetId, round = d.Asset.CreatedAtRound, txType = "acfg") |> Async.AwaitTask
+        return
+            tr.Transactions
+            |> Seq.tryHead
+            |> Option.map(fun tx ->
+                let addr = Algorand.Address(d.Asset.Params.Reserve)
+                let cid = Cid(ContentType = "dag-pb", Version = 0, Hash = MultiHash("sha2-256", addr.Bytes))
+                cid.ToString())
+    } |> Async.RunSynchronously
+
 let tryGetChampInfo(assetId:uint64) =
     async {
         let! d = lookUpApi.lookupAssetByIDAsync(assetId) |> Async.AwaitTask

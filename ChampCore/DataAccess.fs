@@ -26,6 +26,19 @@ module internal SQL =
             Key TEXT NOT NULL PRIMARY KEY,
             Value TEXT NOT NULL
         );
+
+    """
+
+    let AlterChampTable = """
+        ALTER TABLE Champ
+        ADD COLUMN IPFS TEXT
+    """
+
+    let getIPFSColumnInfo = """
+        select count(*) from
+        pragma_table_info('Champ')
+        where name='IPFS'
+
     """
 
     let GetLastTrackedBattle = 
@@ -42,9 +55,8 @@ module internal SQL =
         "SELECT EXISTS(SELECT 1 FROM Battle WHERE BattleNum = @battleNum LIMIT 1);"
 
     let AddOrUpdateChamp = "
-        INSERT INTO Champ(AssetID, Name) VALUES(@assetId, @name)
-        ON CONFLICT(AssetID) DO UPDATE SET Name = @name;
- "
+        INSERT INTO Champ(AssetID, Name, IPFS) VALUES(@assetId, @name, @ipfs)
+        ON CONFLICT(AssetID) DO UPDATE SET Name = @name, IPFS = @ipfs;"
 
     let AddOrUpdateBattle = "
         INSERT INTO Battle(BattleNum, WinnerID, LoserID, Description, Wager)
@@ -58,12 +70,14 @@ module internal SQL =
     "
 
     let GetChampByAssetId = "
-        SELECT Name, AssetID FROM Champ
+        SELECT Name, AssetID, IPFS FROM Champ
         WHERE AssetID = @assetId
     "
 
     let GetBattleByBattleNum = "
-        SELECT BattleNum, Description, Wager, wc.AssetID as WAssetId, wc.Name as Winner, lc.AssetID as LAssetId, lc.Name as Loser
+        SELECT BattleNum, Description, Wager, 
+            wc.AssetID as WAssetId, wc.Name as Winner, wc.IPFS as WIPFS,
+            lc.AssetID as LAssetId, lc.Name as Loser, lc.IPFS as LIPFS
         FROM Battle
         JOIN Champ wc ON wc.ID = Battle.WinnerID
         JOIN Champ lc ON lc.ID = Battle.LoserID
@@ -71,11 +85,18 @@ module internal SQL =
     "
 
     let GetAllChamps = "
-        SELECT Name, AssetID FROM Champ
+        SELECT Name, AssetID, IPFS FROM Champ
+    "
+
+    let GetAssetIdsWithoutIPFS = "
+        SELECT Name, AssetID FROM Champ WHERE IPFS IS NULL
     "
 
     let GetAllBattles = "
-        SELECT BattleNum, Description, Wager, wc.AssetID as WAssetId, wc.Name as Winner, lc.AssetID as LAssetId, lc.Name as Loser
+        SELECT
+            BattleNum, Description, Wager,
+            wc.AssetID as WAssetId, wc.Name as Winner, wc.IPFS as WIPFS,
+            lc.AssetID as LAssetId, lc.Name as Loser, lc.IPFS as LIPFS
         FROM Battle
         JOIN Champ wc ON wc.ID = Battle.WinnerID
         JOIN Champ lc ON lc.ID = Battle.LoserID
@@ -90,6 +111,12 @@ type SqliteStorage(cs: string)=
     let conn = new SqliteConnection(cs)
     do Db.newCommand SQL.createTablesSQL conn
        |> Db.exec
+    do Db.newCommand SQL.getIPFSColumnInfo conn
+       |> Db.scalar(fun v -> tryUnbox<int64> v)
+       |> Option.iter(fun i ->
+         if i = 0L then
+            Db.newCommand SQL.AlterChampTable conn
+            |> Db.exec)
     do conn.Dispose()
 
     let getChampIdByAssetId(assetId: uint64) =
@@ -124,12 +151,13 @@ type SqliteStorage(cs: string)=
         |> Db.setParams [ "battleNum", SqlType.Int64 <| int64 battleNum ]
         |> Db.scalar (fun v -> tryUnbox<int64> v |> Option.map(fun v -> v > 0) |> Option.defaultValue false)
     
-    member t.AddOrInsertChamp(champ:Champ) =
+    member t.AddOrUpdateChamp(champ:Champ) =
         use conn = new SqliteConnection(cs)
         Db.newCommand SQL.AddOrUpdateChamp conn
         |> Db.setParams [
             "assetId", SqlType.Int64 <| int64 champ.AssetId
             "name", SqlType.String champ.Name
+            "ipfs", if champ.Ipfs.IsSome then SqlType.String champ.Ipfs.Value else SqlType.Null
         ]
         |> Db.exec
         
@@ -157,7 +185,8 @@ type SqliteStorage(cs: string)=
         |> Db.querySingle(fun reader -> 
             {
                 Name = reader.GetString(0);
-                AssetId = uint64 (reader.GetInt64(1))
+                AssetId = uint64 (reader.GetInt64(1));
+                Ipfs = if reader.IsDBNull(2) then None else Some(reader.GetString(2))
             })
 
     member t.TryGetBattle(battleNum: uint64) : Battle option =
@@ -174,10 +203,12 @@ type SqliteStorage(cs: string)=
                 Winner = {
                     AssetId = reader.GetInt64(3) |> uint64
                     Name = reader.GetString(4)
+                    Ipfs = if reader.IsDBNull(5) then None else Some(reader.GetString(5))
                 }
                 Loser = {
-                    AssetId = reader.GetInt64(5) |> uint64
-                    Name = reader.GetString(6)
+                    AssetId = reader.GetInt64(6) |> uint64
+                    Name = reader.GetString(7)
+                    Ipfs = if reader.IsDBNull(8) then None else Some(reader.GetString(8))
                 }
             })
 
@@ -188,6 +219,7 @@ type SqliteStorage(cs: string)=
             {
                 Name = reader.GetString(0);
                 AssetId = uint64 (reader.GetInt64(1))
+                Ipfs = if reader.IsDBNull(2) then None else Some(reader.GetString(2))
             })
 
     member t.GetAllBattles() : Battle list =
@@ -201,9 +233,20 @@ type SqliteStorage(cs: string)=
                 Winner = {
                     AssetId = reader.GetInt64(3) |> uint64
                     Name = reader.GetString(4)
+                    Ipfs = if reader.IsDBNull(5) then None else Some(reader.GetString(5))
                 }
                 Loser = {
-                    AssetId = reader.GetInt64(5) |> uint64
-                    Name = reader.GetString(6)
+                    AssetId = reader.GetInt64(6) |> uint64
+                    Name = reader.GetString(7)
+                    Ipfs = if reader.IsDBNull(8) then None else Some(reader.GetString(8))
                 }
             })
+    
+    member t.ChampsWithoutIPFS() : Champ list =
+        use conn = new SqliteConnection(cs)
+        Db.newCommand SQL.GetAssetIdsWithoutIPFS conn
+        |> Db.query(fun reader -> {
+            Name = reader.GetString(0)
+            AssetId = reader.GetInt64(1) |> uint64
+            Ipfs = None
+        })
