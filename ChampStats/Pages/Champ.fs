@@ -9,7 +9,7 @@ let champPage (champDetailedO: ChampDetailed option) =
         | None -> yield Text.raw "Champ either not found or request can't be evaluated at the moment. Verify id and try later"
         | Some chd  ->
             let chst = chd.Stats
-            yield Text.h1 $"{chst.Info.Name} stats"
+            yield Text.h1 $"{chst.Info.Champ.Name} stats"
             yield Elem.img [
                 Attr.class' "champImgBig"
                 Attr.src (UI.IPFS + chd.Properties.Ipfs)
@@ -153,7 +153,7 @@ let champPage (champDetailedO: ChampDetailed option) =
                 chst.Battles
                 |> List.mapi(fun i b ->
                     let opponent, bres =
-                        if b.Winner.AssetId <> chst.Info.AssetId then b.Winner, "-"
+                        if b.Winner.AssetId <> chst.Info.Champ.AssetId then b.Winner, "-"
                         else b.Loser, "+"
                     [
                         Elem.tr [] [

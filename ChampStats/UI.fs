@@ -23,10 +23,19 @@ let layout (title:string) (content : XmlNode list)  =
     ]
 
 
+let getIpfsImg (className: string) (ipfso: string option) =
+     ipfso |> Option.map(fun ipfs ->
+        Elem.img [
+            Attr.class' className
+            Attr.src (IPFS + ipfs)
+        ])
+    |> Option.defaultWith (fun () -> Text.raw "")
+
 let getChampInfoTable (champs:Champs.Core.ChampInfo list) =
     let header =
         Elem.tr [ ] [
             Elem.th [ ] [ Text.raw "" ]
+            Elem.th [ ] [ Text.raw "Icon" ]
             Elem.th [ ] [ Text.raw "Name" ]
             Elem.th [ ] [ Text.raw "Wins" ]
             Elem.th [ ] [ Text.raw "Loses" ]
@@ -37,7 +46,8 @@ let getChampInfoTable (champs:Champs.Core.ChampInfo list) =
         champs |> List.mapi(fun i ch ->
             Elem.tr [] [
                 Elem.td [ ] [ Text.raw $"{i + 1}" ]
-                Elem.td [ ] [ Elem.a [ Attr.href $"/Champs/{ch.AssetId}" ] [ Text.raw $"{ch.Name}" ] ]
+                Elem.td [ ] [ ch.Champ.Ipfs |> getIpfsImg "champImgSmall" ]
+                Elem.td [ ] [ Elem.a [ Attr.href $"/Champs/{ch.Champ.AssetId}" ] [ Text.raw $"{ch.Champ.Name}" ] ]
                 Elem.td [ ] [ Text.raw $"{ch.Wins}" ]
                 Elem.td [ ] [ Text.raw $"{ch.Loses}" ]
                 Elem.td [ ] [ Text.raw $"{ch.Fights}" ]

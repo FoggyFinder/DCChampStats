@@ -9,6 +9,7 @@ type Contributor = {
 type Champ = {
     AssetId: uint64
     Name: string
+    Ipfs : string option
 }
 
 type Battle = {
@@ -20,8 +21,7 @@ type Battle = {
 }
 
 type ChampInfo = {
-    AssetId: uint64
-    Name: string
+    Champ: Champ
 
     Wins: int
     Loses: int
@@ -68,8 +68,8 @@ module Utils =
                 |> System.Convert.FromBase64String
                 |> System.Text.ASCIIEncoding.ASCII.GetString
             let arr = key.Split(">")
-            let winner = { Name = arr.[1]; AssetId = UInt64.Parse(arr.[0]) }
-            let loser =  { Name = arr.[3]; AssetId = UInt64.Parse(arr.[2]) }
+            let winner = { Name = arr.[1]; AssetId = UInt64.Parse(arr.[0]); Ipfs = None }
+            let loser =  { Name = arr.[3]; AssetId = UInt64.Parse(arr.[2]); Ipfs = None }
             let wager = decimal (UInt64.Parse(arr.[4])) / 1000000M
             { BattleNum = battleNum; Winner = winner; Loser = loser; Description = arr[5].Trim(); Wager = wager }
             |> Some
