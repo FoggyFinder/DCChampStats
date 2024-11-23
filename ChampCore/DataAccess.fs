@@ -1,5 +1,9 @@
 ﻿module Champs.Db
 
+type DbKeys =
+    | LastTrackedBattle
+    | LastTrackedTraitSwap
+
 [<RequireQualifiedAccess>]
 module internal SQL =
     let createTablesSQL = """
@@ -41,12 +45,12 @@ module internal SQL =
 
     """
 
-    let GetLastTrackedBattle = 
-        "SELECT Value FROM KeyValue WHERE Key = 'LastTrackedBattle'"
+    let GetValueByKey = 
+        "SELECT Value FROM KeyValue WHERE Key = @key"
     
-    let SetLastTrackedBattle = "
-        INSERT INTO KeyValue(Key, Value) VALUES('LastTrackedBattle', @lastTrackedBattle)
-        ON CONFLICT(Key) DO UPDATE SET Value = @lastTrackedBattle;"
+    let SetKeyValue = "
+        INSERT INTO KeyValue(Key, Value) VALUES(@key, @value)
+        ON CONFLICT(Key) DO UPDATE SET Value = @value;"
 
     let ChampExists = 
         "SELECT EXISTS(SELECT 1 FROM Champ WHERE AssetID = @assetId LIMIT 1);"
@@ -129,14 +133,34 @@ type SqliteStorage(cs: string)=
 
     member t.GetLastTrackedBattle() =
         use conn = new SqliteConnection(cs)
-        Db.newCommand SQL.GetLastTrackedBattle conn
+        Db.newCommand SQL.GetValueByKey conn
+        |> Db.setParams [ "key", SqlType.String (DbKeys.LastTrackedBattle.ToString()) ]
         |> Db.query (fun rd -> rd.ReadString "Value")
         |> List.tryHead
 
     member t.SetLastTrackedBattle(battle:uint64) =
         use conn = new SqliteConnection(cs)
-        Db.newCommand SQL.SetLastTrackedBattle conn
-        |> Db.setParams [ "lastTrackedBattle", SqlType.Int64 <| int64 battle ]
+        Db.newCommand SQL.SetKeyValue conn
+        |> Db.setParams [
+            "key", SqlType.String (DbKeys.LastTrackedBattle.ToString())
+            "value", SqlType.Int64 <| int64 battle 
+        ]
+        |> Db.exec
+
+    member t.GetLastTrackedTraitSwap() =
+        use conn = new SqliteConnection(cs)
+        Db.newCommand SQL.GetValueByKey conn
+        |> Db.setParams [ "key", SqlType.String (DbKeys.LastTrackedTraitSwap.ToString()) ]
+        |> Db.query (fun rd -> rd.ReadString "Value")
+        |> List.tryHead
+
+    member t.SetLastTrackedTraitSwap(round:uint64) =
+        use conn = new SqliteConnection(cs)
+        Db.newCommand SQL.SetKeyValue conn
+        |> Db.setParams [
+            "key", SqlType.String (DbKeys.LastTrackedTraitSwap.ToString())
+            "value", SqlType.Int64 <| int64 round
+        ]
         |> Db.exec
 
     member t.ChampExists(assetId: uint64) =

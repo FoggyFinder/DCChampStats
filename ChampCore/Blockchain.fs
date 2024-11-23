@@ -90,32 +90,31 @@ let getAccountCreatedAssets(wallet:string) =
 open Newtonsoft.Json.Linq
 open Ipfs
 
+let private ipfsFromACFG(acfg:Model.TransactionAssetConfig) =
+    let addr = Algorand.Address(acfg.Params.Reserve)
+    let cid = Cid(ContentType = "dag-pb", Version = 0, Hash = MultiHash("sha2-256", addr.Bytes))
+    cid.ToString()
+
 let tryGetIpfs (assetId: uint64) =
     async {
         let! d = lookUpApi.lookupAssetByIDAsync(assetId) |> Async.AwaitTask
-        let! tr = lookUpApi.lookupAssetTransactionsAsync(assetId, round = d.Asset.CreatedAtRound, txType = "acfg") |> Async.AwaitTask
+        let! tr = lookUpApi.lookupAssetTransactionsAsync(assetId, txType = "acfg") |> Async.AwaitTask
         return
             tr.Transactions
-            |> Seq.tryHead
-            |> Option.map(fun tx ->
-                let addr = Algorand.Address(d.Asset.Params.Reserve)
-                let cid = Cid(ContentType = "dag-pb", Version = 0, Hash = MultiHash("sha2-256", addr.Bytes))
-                cid.ToString())
+            |> Seq.tryLast
+            |> Option.map(fun tx -> ipfsFromACFG tx.AssetConfigTransaction)
     } |> Async.RunSynchronously
 
 let tryGetChampInfo(assetId:uint64) =
     async {
         let! d = lookUpApi.lookupAssetByIDAsync(assetId) |> Async.AwaitTask
-        let! tr = lookUpApi.lookupAssetTransactionsAsync(assetId, round = d.Asset.CreatedAtRound, txType = "acfg") |> Async.AwaitTask
+        let! tr = lookUpApi.lookupAssetTransactionsAsync(assetId, txType = "acfg") |> Async.AwaitTask
         return
             tr.Transactions
-            |> Seq.tryHead
+            |> Seq.tryLast
             |> Option.map(fun tx ->
                 let json = tx.Note |> System.Text.ASCIIEncoding.ASCII.GetString |> JObject.Parse
                 let properties = json.["properties"]
-                let addr = Algorand.Address(d.Asset.Params.Reserve)
-                let cid = Cid(ContentType = "dag-pb", Version = 0, Hash = MultiHash("sha2-256", addr.Bytes))
-                let ipfs = cid.ToString()
                 {
                     Armour = properties.Value<string>("Armour")
                     Background = properties.Value<string>("Background")
@@ -124,7 +123,36 @@ let tryGetChampInfo(assetId:uint64) =
                     Magic = properties.Value<string>("Magic")
                     Skin = properties.Value<string>("Skin")
                     Weapon = properties.Value<string>("Weapon")
-                    Ipfs = ipfs
+                    Ipfs = ipfsFromACFG tx.AssetConfigTransaction
                 }
             )
     } |> Async.RunSynchronously
+
+let getDCChampTransactions(minRound:Nullable<uint64>) = 
+    let rec getTransactions (next:string) acc = 
+        async {
+            let! r = lookUpApi.lookupAccountTransactionsAsync(DarkCoinChampsCreator, next = next, txType = "acfg", minRound=minRound) |> Async.AwaitTask
+            let acc' = acc |> Seq.append r.Transactions
+            if System.String.IsNullOrWhiteSpace(r.NextToken) then
+                return acc'
+            else
+                return! getTransactions r.NextToken acc'
+        }
+    getTransactions null Seq.empty |> Async.RunSynchronously
+    |> Seq.choose(fun tx ->
+        tx.AssetConfigTransaction.AssetId |> Option.ofNullable |> Option.map(fun assetId ->
+            assetId, ipfsFromACFG tx.AssetConfigTransaction))
+
+let getLatestAcfgRoundForChamps() = 
+    let rec getTransactions (next:string) acc = 
+        async {
+            let! r = lookUpApi.lookupAccountTransactionsAsync(DarkCoinChampsCreator, txType = "acfg") |> Async.AwaitTask
+            let trx =
+                r.Transactions
+                |> Seq.choose(fun tr -> Option.ofNullable tr.ConfirmedRound)
+                |> Seq.toArray
+            return
+                if trx.Length = 0 then None
+                else trx |> Array.max |> Some
+        }
+    getTransactions null Seq.empty |> Async.RunSynchronously

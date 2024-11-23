@@ -155,6 +155,26 @@ let refresh() =
         let minB = min latestFilled currentBattle
         storage.SetLastTrackedBattle minB
 
+let refreshIPFS() =
+    Blockchain.getLatestAcfgRoundForChamps()
+    |> Option.iter(fun round ->
+        let lastTracked = storage.GetLastTrackedTraitSwap() |> Option.bind Utils.toUInt64
+        match lastTracked with
+        | None ->
+            storage.SetLastTrackedTraitSwap round
+        | Some r when r = round ->
+            ()
+        | Some r ->
+            getDCChampTransactions (System.Nullable(r))
+            |> Seq.iter(fun (assetId, ipfs) ->
+                storage.TryGetChamp assetId
+                |> Option.iter(fun champ ->
+                    { champ with Ipfs = Some ipfs }
+                    |> storage.AddOrUpdateChamp
+                ))
+            storage.SetLastTrackedTraitSwap round
+    )
+
 let getAllChampsId() =
     getAccountCreatedAssets DarkCoinChampsCreator
     |> Seq.map(fun m -> m.Index)

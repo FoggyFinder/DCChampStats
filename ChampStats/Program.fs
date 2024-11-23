@@ -9,11 +9,8 @@ open System.Threading
 let ct1 = new CancellationTokenSource()
 let updateIpfs = 
     async {
-        Champs.Requests.refresh()
         let xs = Champs.Requests.champsWithoutIPFS()
-        xs.Length |> printfn "%i champ's w/t ipfs"
         for (i, c) in xs |> Seq.indexed do
-            printfn "Processing %i champ" i
             try
                 Champs.Blockchain.tryGetIpfs c.AssetId
                 |> Option.iter(fun ipfs ->
@@ -29,10 +26,14 @@ let ct2 = new CancellationTokenSource()
 let refresh =
     async {
         while true do
-            do! Async.Sleep (System.TimeSpan.FromMinutes(15.0))
             try
                 Champs.Requests.refresh()
             with _ -> ()
+            do! Async.Sleep (System.TimeSpan.FromMinutes(5.0))
+            try
+                Champs.Requests.refreshIPFS()
+            with _ -> ()
+            do! Async.Sleep (System.TimeSpan.FromMinutes(10.0))
     }
 Async.Start(refresh, ct2.Token)
 
