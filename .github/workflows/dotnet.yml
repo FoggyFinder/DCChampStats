@@ -64,7 +64,7 @@ jobs:
     - name: Remove app_Offline
       shell: python
       run: |
-        import ftplib
+        from ftplib import FTP
         with FTP('${{ secrets.FTP_SERVER }}') as ftp:
           ftp.login('${{ secrets.FTP_USERNAME }}', '${{ secrets.FTP_PASSWORD }}')
           ftp.delete('app_offline.htm')
