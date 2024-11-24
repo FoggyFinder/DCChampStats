@@ -47,10 +47,9 @@ jobs:
         localDir: ./ChampStats/Release/
 
     - name: Remove app_Offline
-      uses: sebastianpopp/ftp-action@releases/v2
+      uses: StephanThierry/ftp-delete-action@v2.1
       with:
         host: ${{ secrets.FTP_SERVER }}
         user: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
-        localDir: ./AppOffline/
-        options: --delete --ascii
+        remoteFiles: "app_offline.htm"
