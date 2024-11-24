@@ -142,17 +142,19 @@ let getLeaderBoardForBattles(start:uint64 option, end': uint64 option) =
         |> fun battles ->
             if end'.IsSome then battles |> List.filter(fun b -> end'.Value >= b.BattleNum)
             else battles
-    match start, end' with
-    | None, None -> { Battles = LeaderboardRange.EmptyOrInvalid; Leaderboard = [] }
-    | Some x, Some y when x > y -> { Battles = LeaderboardRange.EmptyOrInvalid; Leaderboard = [] }
-    | Some x, Some y ->
-        { Battles = LeaderboardRange.Range(x, y); Leaderboard = getLeaderBoard battles }
-    | Some x, None ->
-        let y = battles |> List.maxBy(fun b -> b.BattleNum) |> fun b -> b.BattleNum
-        { Battles = LeaderboardRange.Range(x, y); Leaderboard = getLeaderBoard battles }
-    | None, Some y ->
-        let x = battles |> List.minBy(fun b -> b.BattleNum) |> fun b -> b.BattleNum
-        { Battles = LeaderboardRange.Range(x, y); Leaderboard = getLeaderBoard battles }
+    if battles.IsEmpty then { Battles = LeaderboardRange.EmptyOrInvalid; Leaderboard = [] }
+    else
+        match start, end' with
+        | None, None -> { Battles = LeaderboardRange.EmptyOrInvalid; Leaderboard = [] }
+        | Some x, Some y when x > y -> { Battles = LeaderboardRange.EmptyOrInvalid; Leaderboard = [] }
+        | Some x, Some y ->
+            { Battles = LeaderboardRange.Range(x, y); Leaderboard = getLeaderBoard battles }
+        | Some x, None ->
+            let y = battles |> List.maxBy(fun b -> b.BattleNum) |> fun b -> b.BattleNum
+            { Battles = LeaderboardRange.Range(x, y); Leaderboard = getLeaderBoard battles }
+        | None, Some y ->
+            let x = battles |> List.minBy(fun b -> b.BattleNum) |> fun b -> b.BattleNum
+            { Battles = LeaderboardRange.Range(x, y); Leaderboard = getLeaderBoard battles }
 
 let refresh() =
     let lastTracked = storage.GetLastTrackedBattle() |> Option.bind Utils.toUInt64 |> Option.defaultValue 0UL

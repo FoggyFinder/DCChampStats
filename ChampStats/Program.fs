@@ -27,16 +27,17 @@ let refresh =
             try
                 Champs.Requests.refresh()
             with _ -> ()
-            do! Async.Sleep (System.TimeSpan.FromMinutes(5.0))
+            do! Async.Sleep (System.TimeSpan.FromMinutes(4.0))
             try
                 Champs.Requests.refreshIPFS()
             with _ -> ()
-            do! Async.Sleep (System.TimeSpan.FromMinutes(5.0))
+            do! Async.Sleep (System.TimeSpan.FromMinutes(4.0))
             try
                 do! updateIpfs
             with _ -> ()
-            do! Async.Sleep (System.TimeSpan.FromMinutes(5.0))
+            do! Async.Sleep (System.TimeSpan.FromMinutes(2.0))
     }
+Async.Start(refresh, ct.Token)
 
 [<RequireQualifiedAccess>]
 module Route =
