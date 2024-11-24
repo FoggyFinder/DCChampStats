@@ -5,9 +5,10 @@ open Champs.Core
 
 let leaderBoardPage (leaderboard:LeaderBoard) =
     [
-        if leaderboard.Battles.IsEmptyOrInvalid then
+        match leaderboard.Battles with
+        | LeaderboardRange.EmptyOrInvalid ->
             yield Text.raw "No battles are found"
-        else
+        | _ ->
             let battlesTableHeader =
                 Elem.tr [ ] [
                     Elem.th [] [ Text.raw "Place" ]
