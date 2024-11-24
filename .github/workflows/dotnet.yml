@@ -30,10 +30,27 @@ jobs:
     - name: Publish
       run: dotnet publish ChampStats.fsproj -c Release --output ./Release
 
-    - name: Upload ftp
+    - name: Upload app_Offline
+      uses: sebastianpopp/ftp-action@releases/v2
+      with:
+        host: ${{ secrets.FTP_SERVER }}
+        user: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        localDir: ./AppOffline/
+
+    - name: Upload site
       uses: sebastianpopp/ftp-action@releases/v2
       with:
         host: ${{ secrets.FTP_SERVER }}
         user: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         localDir: ./ChampStats/Release/
+
+    - name: Remove app_Offline
+      uses: sebastianpopp/ftp-action@releases/v2
+      with:
+        host: ${{ secrets.FTP_SERVER }}
+        user: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        localDir: ./AppOffline/
+	options: "--delete"
