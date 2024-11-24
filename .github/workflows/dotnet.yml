@@ -52,13 +52,21 @@ jobs:
     - name: Wait for 10 seconds
       run: sleep 10
 
+    # - name: Remove app_Offline
+    #   uses: StephanThierry/ftp-delete-action@v2.1
+    #   with:
+    #     host: ${{ secrets.FTP_SERVER }}
+    #     user: ${{ secrets.FTP_USERNAME }}
+    #     password: ${{ secrets.FTP_PASSWORD }}
+    #     remoteFiles: "app_offline.htm"
+    #     ignoreSSL: "1"
+
     - name: Remove app_Offline
-      uses: StephanThierry/ftp-delete-action@v2.1
-      with:
-        host: ${{ secrets.FTP_SERVER }}
-        user: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        remoteFiles: "app_offline.htm"
-        ignoreSSL: "1"
+      shell: python
+      run: |
+        import ftplib
+        with FTP('${{ secrets.FTP_SERVER }}') as ftp:
+          ftp.login('${{ secrets.FTP_USERNAME }}', '${{ secrets.FTP_PASSWORD }}')
+          ftp.delete('app_offline.htm')
 
 
