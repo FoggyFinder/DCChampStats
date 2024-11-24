@@ -53,3 +53,4 @@ jobs:
         user: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         remoteFiles: "app_offline.htm"
+        ignoreSSL: 1
