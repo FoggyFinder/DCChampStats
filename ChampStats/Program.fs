@@ -103,26 +103,18 @@ webHost [||] {
             |> fun html -> Response.ofHtml html ctx)
 
         get Route.leaderboard (fun ctx ->
-            let title = "Full Leaderboard"
             Champs.Requests.getFullLeaderboard()
-            |> Champs.Pages.Leaderboard.leaderBoardPage title
-            |> UI.layout title
+            |> Champs.Pages.Leaderboard.leaderBoardPage
+            |> UI.layout "Leaderboard"
             |> fun html -> Response.ofHtml html ctx)
 
         get Route.leaderboardRange (fun ctx ->
             let route = Request.getRoute ctx
             let rawRange = route.GetString "range"
             let range = Champs.Core.Utils.parseRange rawRange
-            let title =
-                match range with
-                | Some x, Some y -> $"({x}..{y})"
-                | Some x, None -> $"({x}..)"
-                | None, Some y -> $"(..{y})"
-                | None, None -> ""
-                |> fun s -> "Leaderboard " + s
             Champs.Requests.getLeaderBoardForBattles range
-            |> Champs.Pages.Leaderboard.leaderBoardPage title
-            |> UI.layout title
+            |> Champs.Pages.Leaderboard.leaderBoardPage
+            |> UI.layout "Leaderboard"
             |> fun html -> Response.ofHtml html ctx)
     ]
 }

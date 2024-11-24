@@ -57,6 +57,17 @@ type ChampDetailed = {
 }
 
 [<RequireQualifiedAccess>]
+type LeaderboardRange =
+    | Full
+    | Range of uint64 * uint64
+    | EmptyOrInvalid
+
+type LeaderBoard = {
+    Battles: LeaderboardRange
+    Leaderboard: ChampInfo list
+}
+
+[<RequireQualifiedAccess>]
 module Utils =
     open System
     open Newtonsoft.Json.Linq
