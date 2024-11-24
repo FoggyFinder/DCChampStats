@@ -38,6 +38,9 @@ jobs:
         password: ${{ secrets.FTP_PASSWORD }}
         localDir: ./AppOffline/
 
+    - name: Wait for 10 seconds
+      run: sleep 10
+
     - name: Upload site
       uses: sebastianpopp/ftp-action@releases/v2
       with:
@@ -46,6 +49,9 @@ jobs:
         password: ${{ secrets.FTP_PASSWORD }}
         localDir: ./ChampStats/Release/
 
+    - name: Wait for 10 seconds
+      run: sleep 10
+
     - name: Remove app_Offline
       uses: StephanThierry/ftp-delete-action@v2.1
       with:
@@ -53,4 +59,6 @@ jobs:
         user: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         remoteFiles: "app_offline.htm"
-        ignoreSSL: 1
+        ignoreSSL: "1"
+
+
