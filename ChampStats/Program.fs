@@ -6,7 +6,6 @@ open Falco.Routing
 open Falco.HostBuilder
 open System.Threading
 
-let ct1 = new CancellationTokenSource()
 let updateIpfs = 
     async {
         let xs = Champs.Requests.champsWithoutIPFS()
@@ -20,9 +19,8 @@ let updateIpfs =
             // to not spam with requests
             do! Async.Sleep(System.TimeSpan.FromSeconds(15.0))
 }
-Async.Start(updateIpfs, ct1.Token)
 
-let ct2 = new CancellationTokenSource()
+let ct = new CancellationTokenSource()
 let refresh =
     async {
         while true do
@@ -33,9 +31,12 @@ let refresh =
             try
                 Champs.Requests.refreshIPFS()
             with _ -> ()
-            do! Async.Sleep (System.TimeSpan.FromMinutes(10.0))
+            do! Async.Sleep (System.TimeSpan.FromMinutes(5.0))
+            try
+                do! updateIpfs
+            with _ -> ()
+            do! Async.Sleep (System.TimeSpan.FromMinutes(5.0))
     }
-Async.Start(refresh, ct2.Token)
 
 [<RequireQualifiedAccess>]
 module Route =
@@ -119,5 +120,4 @@ webHost [||] {
     ]
 }
 
-ct1.Cancel()
-ct2.Cancel()
+ct.Cancel()
