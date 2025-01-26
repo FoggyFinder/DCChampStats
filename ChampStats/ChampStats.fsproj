@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="UI.fs" />
     <Compile Include="Pages\Home.fs" />
+    <Compile Include="Pages\FAQ.fs" />
     <Compile Include="Pages\Leaderboard.fs" />
     <Compile Include="Pages\Battle.fs" />
     <Compile Include="Pages\Champ.fs" />

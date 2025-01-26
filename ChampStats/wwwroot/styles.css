@@ -121,3 +121,19 @@ h1 {
 code {
     text-align: center;
 }
+
+.QA {
+    padding: 4px;
+    margin: 4px;
+    border: solid lightyellow;
+}
+
+.Q {
+    padding: 2px;
+    text-align: center;
+    color: lightgreen;
+}
+
+.A {
+    padding: 2px;
+}

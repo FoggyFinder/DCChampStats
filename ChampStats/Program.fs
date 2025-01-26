@@ -43,6 +43,7 @@ Async.Start(refresh, ct.Token)
 module Route =
     let [<Literal>] index = "/"
     let [<Literal>] notFound = "/not-found"
+    let [<Literal>] faq = "/faq"
 
     let [<Literal>] wallet = "/wallets/{wallet}"
     let [<Literal>] champ = "champs/{champ}"
@@ -65,6 +66,11 @@ webHost [||] {
             Champs.Requests.getContributors()
             |> Champs.Pages.Home.homePage
             |> UI.layout "Home"
+            |> fun html -> Response.ofHtml html ctx)
+        
+        get Route.faq (fun ctx ->
+            Champs.Pages.FAQ.faqPage()
+            |> UI.layout "FAQ"
             |> fun html -> Response.ofHtml html ctx)
 
         get Route.wallet (fun ctx ->

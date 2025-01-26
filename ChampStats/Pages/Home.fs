@@ -50,6 +50,13 @@ let homePage(contributors: Contributor list) =
                 yield Elem.a [ Attr.href "/leaderboard/1000-1099" ]
                     [ Text.raw "/leaderboard/1000-1099" ]
             ]
+
+            yield Elem.li [] [
+                yield Text.code "/faq"
+                yield Text.raw " - answers to most common questions, "
+                yield Elem.a [ Attr.href "/faq" ]
+                    [ Text.raw "/faq" ]
+            ]
         ]
         yield Elem.hr []
         yield Elem.p [] [
