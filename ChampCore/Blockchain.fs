@@ -49,7 +49,7 @@ let getBattle (battleNum: uint64) =
     } |> Async.RunSynchronously
 
 let getBoxBattles (start: uint64) (end': uint64) = 
-    seq { for i in [start..end' - 1UL] -> getBattle i }
+    seq { for i in [start..end'] -> getBattle i }
 
 let getAllBattles() =
     let count = getBattleNum()
