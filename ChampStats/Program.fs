@@ -59,8 +59,8 @@ webHost [||] {
     use_hsts
     use_https
 
-    use_caching
-    use_compression
+    //use_caching
+    //use_compression
     use_static_files
 
     endpoints [
