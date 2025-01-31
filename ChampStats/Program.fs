@@ -56,9 +56,6 @@ module Route =
     let [<Literal>] leaderboardRange = "leaderboard/{range}"
 
 webHost [||] {
-    use_hsts
-    use_https
-
     //use_caching
     //use_compression
     use_static_files
