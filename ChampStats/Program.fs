@@ -124,6 +124,9 @@ let endpoints =
 
 let wapp = WebApplication.Create()
 
+wapp.UseStaticFiles() |> ignore
+wapp.UseCertificateForwarding() |> ignore
+
 wapp.UseRouting()
     .UseFalco(endpoints)
     // ^-- activate Falco endpoint source
