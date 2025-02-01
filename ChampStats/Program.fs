@@ -3,10 +3,9 @@
 
 open Falco
 open Falco.Routing
-open Falco.HostBuilder
+open Microsoft.AspNetCore.Builder
 open System.Threading
 open Microsoft.Extensions.DependencyInjection
-open Microsoft.AspNetCore.Builder
 
 let updateIpfs = 
     async {
@@ -57,27 +56,8 @@ module Route =
     let [<Literal>] leaderboard = "leaderboard"
     let [<Literal>] leaderboardRange = "leaderboard/{range}"
 
-open System
-open Microsoft.AspNetCore.Server.Kestrel.Core
-let service (services: IServiceCollection) =
-    // https://stackoverflow.com/a/60964837
-    let _ =
-        services.Configure<IISServerOptions>(fun (options:IISServerOptions) ->
-            options.MaxRequestBodySize <- Nullable(Int64.MaxValue))
-    let _ =
-        services.Configure<KestrelServerOptions>(fun (options:KestrelServerOptions) ->
-            options.Limits.MaxRequestBodySize <- Nullable(Int64.MaxValue))
-    services
-
-webHost [||] {
-    //use_hsts
-    //use_https
-
-    use_caching
-    use_compression
-    use_static_files
-    add_service service
-    endpoints [
+let endpoints =
+    [
         get Route.index (fun ctx ->
             Champs.Requests.getContributors()
             |> Champs.Pages.Home.homePage
@@ -139,8 +119,14 @@ webHost [||] {
             Champs.Requests.getLeaderBoardForBattles range
             |> Champs.Pages.Leaderboard.leaderBoardPage
             |> UI.layout "Leaderboard"
-            |> fun html -> Response.ofHtml html ctx)
+            |> fun html -> Response.ofHtml html ctx)    
     ]
-}
+
+let wapp = WebApplication.Create()
+
+wapp.UseRouting()
+    .UseFalco(endpoints)
+    // ^-- activate Falco endpoint source
+    .Run()
 
 ct.Cancel()
