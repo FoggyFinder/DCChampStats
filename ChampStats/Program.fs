@@ -70,8 +70,8 @@ let service (services: IServiceCollection) =
     services
 
 webHost [||] {
-    use_hsts
-    use_https
+    //use_hsts
+    //use_https
 
     use_caching
     use_compression
