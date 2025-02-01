@@ -5,6 +5,8 @@ open Falco
 open Falco.Routing
 open Falco.HostBuilder
 open System.Threading
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.AspNetCore.Builder
 
 let updateIpfs = 
     async {
@@ -55,11 +57,26 @@ module Route =
     let [<Literal>] leaderboard = "leaderboard"
     let [<Literal>] leaderboardRange = "leaderboard/{range}"
 
-webHost [||] {
-    //use_caching
-    //use_compression
-    use_static_files
+open System
+open Microsoft.AspNetCore.Server.Kestrel.Core
+let service (services: IServiceCollection) =
+    // https://stackoverflow.com/a/60964837
+    let _ =
+        services.Configure<IISServerOptions>(fun (options:IISServerOptions) ->
+            options.MaxRequestBodySize <- Nullable(Int64.MaxValue))
+    let _ =
+        services.Configure<KestrelServerOptions>(fun (options:KestrelServerOptions) ->
+            options.Limits.MaxRequestBodySize <- Nullable(Int64.MaxValue))
+    services
 
+webHost [||] {
+    use_hsts
+    use_https
+
+    use_caching
+    use_compression
+    use_static_files
+    add_service service
     endpoints [
         get Route.index (fun ctx ->
             Champs.Requests.getContributors()
