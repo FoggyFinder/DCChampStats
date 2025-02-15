@@ -128,7 +128,6 @@ let wapp = WebApplication.Create()
 wapp.UseForwardedHeaders(ForwardedHeadersOptions(ForwardedHeaders = (ForwardedHeaders.XForwardedFor ||| ForwardedHeaders.XForwardedProto))) |> ignore
 wapp.UseHsts() |> ignore
 
-wapp.UseHttpsRedirection() |> ignore
 wapp.UseStaticFiles() |> ignore
 
 wapp.UseRouting() |> ignore
