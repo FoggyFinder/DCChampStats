@@ -6,6 +6,7 @@ open Falco.Routing
 open Microsoft.AspNetCore.Builder
 open System.Threading
 open Microsoft.Extensions.DependencyInjection
+open Microsoft.AspNetCore.HttpOverrides
 
 let updateIpfs = 
     async {
@@ -124,10 +125,15 @@ let endpoints =
 
 let wapp = WebApplication.Create()
 
-wapp.UseStaticFiles() |> ignore
-wapp.UseCertificateForwarding() |> ignore
+wapp.UseForwardedHeaders(ForwardedHeadersOptions(ForwardedHeaders = (ForwardedHeaders.XForwardedFor ||| ForwardedHeaders.XForwardedProto))) |> ignore
+wapp.UseHsts() |> ignore
 
-wapp.UseRouting()
+wapp.UseHttpsRedirection() |> ignore
+wapp.UseStaticFiles() |> ignore
+
+wapp.UseRouting() |> ignore
+
+wapp
     .UseFalco(endpoints)
     // ^-- activate Falco endpoint source
     .Run()
