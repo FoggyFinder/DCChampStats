@@ -52,6 +52,13 @@ let homePage(contributors: Contributor list) =
             ]
 
             yield Elem.li [] [
+                yield Text.code "/leaderboard/{startFrom}"
+                yield Text.raw " - shows top Champs starting from specific battle. For example, to print table for battles from 1600 one could use "
+                yield Elem.a [ Attr.href "/leaderboard/1600" ]
+                    [ Text.raw "/leaderboard/1600" ]
+            ]
+            
+            yield Elem.li [] [
                 yield Text.code "/faq"
                 yield Text.raw " - answers to most common questions, "
                 yield Elem.a [ Attr.href "/faq" ]
