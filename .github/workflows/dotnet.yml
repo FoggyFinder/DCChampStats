@@ -16,45 +16,13 @@ jobs:
         working-directory: ChampStats
     steps:
     - uses: actions/checkout@v4
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
-        
-    - name: Restore dependencies
-      run: dotnet restore
-      
-    - name: Build
-      run: dotnet build --no-restore
 
-    - name: Publish
-      run: dotnet publish ChampStats.fsproj -c Release --output ./Release
-
-    - name: stop
+    - name: update from github
       uses: appleboy/ssh-action@v1.2.1
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.KEY }}
         port: ${{ secrets.PORT }}
-        script: sudo systemctl stop champsstats
-
-    - name: copy file to server
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.KEY }}
-        port: ${{ secrets.PORT }}
-        source: ./ChampStats/Release/
-        target: ${{ secrets.TARGET_PATH }}
-    
-    - name: start
-      uses: appleboy/ssh-action@v1.2.1
-      with:
-        host: ${{ secrets.HOST }}
-        username: ${{ secrets.USERNAME }}
-        key: ${{ secrets.KEY }}
-        port: ${{ secrets.PORT }}
-        script: sudo systemctl start champsstats
+        script: ./updateChampInfo.sh
 

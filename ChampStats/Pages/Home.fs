@@ -141,6 +141,4 @@ let homePage(contributors: Contributor list) =
                 yield Text.raw " - to store some info to avoid unnecessary request to API"
             ]
         ]
-        yield Elem.hr []
-        yield Text.p "Version: 0.1"
     ]
