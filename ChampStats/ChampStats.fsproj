@@ -13,6 +13,7 @@
     <Compile Include="Pages\Battle.fs" />
     <Compile Include="Pages\Champ.fs" />
     <Compile Include="Pages\Wallet.fs" />
+    <Compile Include="Pages\Stats.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

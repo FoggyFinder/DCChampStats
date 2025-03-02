@@ -16,6 +16,7 @@ let httpClient = HttpClientConfigurator.ConfigureHttpClient(ALGOD_API_ADDR, ALGO
 let lookUpApi = LookupApi(httpClient)
 let [<Literal>] ArenaContract = 1053328572UL
 let [<Literal>] DarkCoinChampsCreator = "L6VIKAHGH4D7XNH3CYCWKWWOHYPS3WYQM6HMIPNBVSYZWPNQ6OTS5VERQY"
+let [<Literal>] ArenaCreator = "762FFO2SIDJG2H7SXU5BQLQJ4Q5BQPGKKJGS2LEDQSJ7N5EMB2VVZMSMXM"
 
 let getApp() = 
     async { 
@@ -31,6 +32,49 @@ let getBattleNum() =
         match key with
         | "battleNum" -> Some g.Value.Uint
         | _ -> None)
+
+let convertRoundNumberToDateTime(roundNumber:uint64) =
+    async {
+        let! block = lookUpApi.lookupBlockAsync(roundNumber) |> Async.AwaitTask
+        return DateTimeOffset.FromUnixTimeSeconds(int64 block.Timestamp).UtcDateTime
+    } |> Async.RunSynchronously
+// 1996-12-19T16:39:57-08:00
+let getApplAccountTransactions(address:string, afterTimeOpt:DateTime option) =
+    let afterTimeStr = afterTimeOpt |> Option.map(fun dt -> dt.ToString("yyyy-MM-dd")) |> Option.defaultValue ""
+    printfn "Get txs after %s" afterTimeStr
+    let rec getTransactions (next:string) acc = 
+        async {
+            let! r = lookUpApi.lookupAccountTransactionsAsync(address,next=next,txType="appl", afterTime=afterTimeStr) |> Async.AwaitTask
+            let acc' = acc |> Seq.append r.Transactions
+            if System.String.IsNullOrWhiteSpace(r.NextToken) then
+                return acc'
+            else
+                return! getTransactions r.NextToken acc'
+        }
+    getTransactions null Seq.empty |> Async.RunSynchronously
+
+let getBattlesDateTimes(afterTimeOpt:DateTime option) =
+    getApplAccountTransactions(ArenaCreator, afterTimeOpt)
+    |> Seq.filter(fun tx -> tx.ApplicationTransaction <> null && tx.ApplicationTransaction.ApplicationId = ArenaContract)
+    |> Seq.choose(fun tx ->
+        try
+            let args = tx.ApplicationTransaction.ApplicationArgs |> Seq.toArray
+            let txT = args[0] |> System.Text.ASCIIEncoding.ASCII.GetString
+            match txT with
+            | "writeBattle" ->
+                let battleStr = args[1] |> System.Text.ASCIIEncoding.ASCII.GetString
+                let battleNum = battleStr.Replace("Battle", "") |> Utils.toUInt64
+                let dt = convertRoundNumberToDateTime tx.ConfirmedRound.Value
+                battleNum |> Option.map(fun v -> v, dt)
+            | _ -> None
+        with exp ->
+            printfn "%A" exp
+            None)
+    |> Seq.groupBy fst
+    |> Seq.map(fun (k, gr)->
+        let group = gr |> Seq.map snd |> Seq.toArray
+        let max = gr |> Seq.max
+        k, max)
 
 let client = new HttpClient()
 let getBattle (battleNum: uint64) =

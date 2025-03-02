@@ -17,6 +17,9 @@ let private processBattle (battle:Battle) =
     if storage.BattleExists battle.BattleNum |> not then
         storage.AddOrUpdateBattle battle
 
+let addOrUpdateBattle(battle:Battle) =
+    storage.AddOrUpdateBattle battle
+
 let private getChampInfo (assetId: uint64) : ChampInfo option =
     storage.TryGetChamp assetId
     |> Option.map(fun champ ->
@@ -156,6 +159,27 @@ let getLeaderBoardForBattles(start:uint64 option, end': uint64 option) =
             let x = battles |> List.minBy(fun b -> b.BattleNum) |> fun b -> b.BattleNum
             { Battles = LeaderboardRange.Range(x, y); Leaderboard = getLeaderBoard battles }
 
+open System
+let getActivity() =
+    let today = DateTime.Now
+    storage.GetAllBattles()
+    |> List.fold(fun activity battle ->
+        let activity' =
+            match battle.UTCDateTime with
+            | Some dt ->
+                let localDT = dt.ToLocalTime()
+                if localDT.Date = today.Date then
+                    { activity with Today = activity.Today + 1 }
+                elif localDT.Date = today.AddDays(-1).Date then
+                    { activity with Yesterday = activity.Yesterday + 1 }
+                elif localDT.Date > today.AddDays(-7).Date then
+                    { activity with Week = activity.Week + 1 }
+                elif localDT.Date > today.AddMonths(-1).Date then
+                    { activity with Month = activity.Month + 1 }
+                else activity
+            | None -> { activity with Untracked = activity.Untracked + 1 }
+        { activity' with Total = activity'.Total + 1 }) Activity.Empty
+
 let refresh() =
     let lastTracked = storage.GetLastTrackedBattle() |> Option.bind Utils.toUInt64 |> Option.defaultValue 0UL
     let currentBattle = Blockchain.getBattleNum()
@@ -251,9 +275,9 @@ let getBattle(battleId:uint64) =
     storage.TryGetBattle battleId
 
 let getBattles() = storage.GetAllBattles()
-let champsWithoutIPFS() =
-    storage.ChampsWithoutIPFS()
-    |> List.filter(fun c -> allChamps.Contains c.AssetId)
+let battlesWithoutTimestamp() = storage.BattlesWithoutTimestamp()
+let latestTrackedBattleDT() = storage.GetLastTrackedBattleDateTime()
+let setLatestTrackedattleDT = storage.SetLastTrackedBattleDateTime
 
 let client = new HttpClient()
 let getContributors() =

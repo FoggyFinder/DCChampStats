@@ -3,6 +3,7 @@
 type DbKeys =
     | LastTrackedBattle
     | LastTrackedTraitSwap
+    | LastTrackedBattleDateTime
 
 [<RequireQualifiedAccess>]
 module internal SQL =
@@ -33,15 +34,15 @@ module internal SQL =
 
     """
 
-    let AlterChampTable = """
-        ALTER TABLE Champ
-        ADD COLUMN IPFS TEXT
+    let AlterBattleTable = """
+        ALTER TABLE Battle
+        ADD COLUMN Timestamp DATETIME
     """
 
-    let getIPFSColumnInfo = """
+    let getTimestampColumnInfo = """
         select count(*) from
-        pragma_table_info('Champ')
-        where name='IPFS'
+        pragma_table_info('Battle')
+        where name='Timestamp'
 
     """
 
@@ -63,10 +64,10 @@ module internal SQL =
         ON CONFLICT(AssetID) DO UPDATE SET Name = @name, IPFS = @ipfs;"
 
     let AddOrUpdateBattle = "
-        INSERT INTO Battle(BattleNum, WinnerID, LoserID, Description, Wager)
-        VALUES(@battleNum, @winnerId, @loserId, @description, @wager)
+        INSERT INTO Battle(BattleNum, WinnerID, LoserID, Description, Wager, Timestamp)
+        VALUES(@battleNum, @winnerId, @loserId, @description, @wager, @timestamp)
         ON CONFLICT(BattleNum) DO
-        UPDATE SET WinnerID = @winnerId, LoserID = @loserId, Description = @description, Wager = @wager;
+        UPDATE SET WinnerID = @winnerId, LoserID = @loserId, Description = @description, Wager = @wager, Timestamp = @timestamp;
  "
     let GetChampIdByAssetId = "
         SELECT ID FROM Champ
@@ -81,7 +82,8 @@ module internal SQL =
     let GetBattleByBattleNum = "
         SELECT BattleNum, Description, Wager, 
             wc.AssetID as WAssetId, wc.Name as Winner, wc.IPFS as WIPFS,
-            lc.AssetID as LAssetId, lc.Name as Loser, lc.IPFS as LIPFS
+            lc.AssetID as LAssetId, lc.Name as Loser, lc.IPFS as LIPFS,
+            Timestamp
         FROM Battle
         JOIN Champ wc ON wc.ID = Battle.WinnerID
         JOIN Champ lc ON lc.ID = Battle.LoserID
@@ -92,15 +94,16 @@ module internal SQL =
         SELECT Name, AssetID, IPFS FROM Champ
     "
 
-    let GetAssetIdsWithoutIPFS = "
-        SELECT Name, AssetID FROM Champ WHERE IPFS IS NULL
+    let GetBattlesWithoutTimestamp = "
+        SELECT BattleNum FROM Battle WHERE Timestamp IS NULL
     "
 
     let GetAllBattles = "
         SELECT
             BattleNum, Description, Wager,
             wc.AssetID as WAssetId, wc.Name as Winner, wc.IPFS as WIPFS,
-            lc.AssetID as LAssetId, lc.Name as Loser, lc.IPFS as LIPFS
+            lc.AssetID as LAssetId, lc.Name as Loser, lc.IPFS as LIPFS,
+            Timestamp
         FROM Battle
         JOIN Champ wc ON wc.ID = Battle.WinnerID
         JOIN Champ lc ON lc.ID = Battle.LoserID
@@ -110,16 +113,17 @@ open Champs.Core
 open System.Collections.Generic
 open Microsoft.Data.Sqlite
 open Donald
+open System
 
 type SqliteStorage(cs: string)=
     let conn = new SqliteConnection(cs)
     do Db.newCommand SQL.createTablesSQL conn
        |> Db.exec
-    do Db.newCommand SQL.getIPFSColumnInfo conn
+    do Db.newCommand SQL.getTimestampColumnInfo conn
        |> Db.scalar(fun v -> tryUnbox<int64> v)
        |> Option.iter(fun i ->
          if i = 0L then
-            Db.newCommand SQL.AlterChampTable conn
+            Db.newCommand SQL.AlterBattleTable conn
             |> Db.exec)
     do conn.Dispose()
 
@@ -138,6 +142,22 @@ type SqliteStorage(cs: string)=
         |> Db.query (fun rd -> rd.ReadString "Value")
         |> List.tryHead
 
+    member _.GetLastTrackedBattleDateTime() =
+        use conn = new SqliteConnection(cs)
+        Db.newCommand SQL.GetValueByKey conn
+        |> Db.setParams [ "key", SqlType.String (DbKeys.LastTrackedBattleDateTime.ToString()) ]
+        |> Db.query (fun rd -> rd.ReadDateTime "Value")
+        |> List.tryHead
+        
+    member t.SetLastTrackedBattleDateTime(dt:DateTime) =
+        use conn = new SqliteConnection(cs)
+        Db.newCommand SQL.SetKeyValue conn
+        |> Db.setParams [
+            "key", SqlType.String (DbKeys.LastTrackedBattleDateTime.ToString())
+            "value", SqlType.DateTime dt
+        ]
+        |> Db.exec    
+    
     member t.SetLastTrackedBattle(battle:uint64) =
         use conn = new SqliteConnection(cs)
         Db.newCommand SQL.SetKeyValue conn
@@ -196,6 +216,7 @@ type SqliteStorage(cs: string)=
                 "loserId", SqlType.Int64 <| loserId
                 "description", SqlType.String <| battle.Description
                 "wager", SqlType.Decimal <| battle.Wager
+                "timestamp", if battle.UTCDateTime.IsSome then SqlType.DateTime battle.UTCDateTime.Value else SqlType.Null
             ]
             |> Db.exec
         | _ -> ()
@@ -234,6 +255,7 @@ type SqliteStorage(cs: string)=
                     Name = reader.GetString(7)
                     Ipfs = if reader.IsDBNull(8) then None else Some(reader.GetString(8))
                 }
+                UTCDateTime = if reader.IsDBNull(9) then None else Some(reader.GetDateTime(9))
             })
 
     member t.GetAllChamps() =
@@ -264,13 +286,10 @@ type SqliteStorage(cs: string)=
                     Name = reader.GetString(7)
                     Ipfs = if reader.IsDBNull(8) then None else Some(reader.GetString(8))
                 }
+                UTCDateTime = if reader.IsDBNull(9) then None else Some(reader.GetDateTime(9))
             })
     
-    member t.ChampsWithoutIPFS() : Champ list =
+    member t.BattlesWithoutTimestamp() : uint64 list =
         use conn = new SqliteConnection(cs)
-        Db.newCommand SQL.GetAssetIdsWithoutIPFS conn
-        |> Db.query(fun reader -> {
-            Name = reader.GetString(0)
-            AssetId = reader.GetInt64(1) |> uint64
-            Ipfs = None
-        })
+        Db.newCommand SQL.GetBattlesWithoutTimestamp conn
+        |> Db.query(fun reader -> uint64 <| reader.GetInt64(0))
