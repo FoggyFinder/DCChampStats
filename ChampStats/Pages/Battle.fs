@@ -12,7 +12,12 @@ let battlePage (battleo:Battle option) =
             yield 
                 [ Elem.tr [] [
                     Elem.td [] [ battle.Winner.Ipfs |> UI.getIpfsImg "champImgAvg" ]
-                    Elem.td [] [ Text.raw $"{battle.Wager}" ]
+                    Elem.td [] [ 
+                        Text.raw $"{battle.Wager}"
+                        //if battle.UTCDateTime.IsSome then
+                        //    Elem.br []
+                        //    Text.raw $"{battle.UTCDateTime.Value.ToString()}"
+                    ]
                     Elem.td [] [ battle.Loser.Ipfs |> UI.getIpfsImg "champImgAvg" ]
                   ]
 

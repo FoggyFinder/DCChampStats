@@ -7,25 +7,48 @@ open Microsoft.AspNetCore.Builder
 open System.Threading
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.AspNetCore.HttpOverrides
+open System
+open System.Collections.Generic
+// ToDo: make thread-safe
+let updateBattles =
+    let cacheDict = Dictionary<uint64, (uint64 * DateTime)>()
+    let updateCache() =
+        let afterDT = Champs.Requests.latestTrackedBattleDT()
+        let newValues = Champs.Blockchain.getBattlesDateTimes afterDT
+        newValues
+        |> Seq.iter(fun (key, v) ->
+            if cacheDict.ContainsKey key then
+                cacheDict.Remove key |> ignore
+            cacheDict.Add(key, v))
 
-let updateIpfs = 
     async {
-        let xs = Champs.Requests.champsWithoutIPFS()
-        for (i, c) in xs |> Seq.indexed do
+        updateCache()
+        let xs = Champs.Requests.battlesWithoutTimestamp()
+        for battleNum in xs do
             try
-                Champs.Blockchain.tryGetIpfs c.AssetId
-                |> Option.iter(fun ipfs ->
-                    { c with Ipfs = Some ipfs }
-                    |> Champs.Requests.addOrUpdateChamp)
+                match Champs.Requests.getBattle battleNum with
+                | Some battle ->
+                    match cacheDict.TryGetValue battleNum with
+                    | true, (_, dt) ->
+                        { battle with UTCDateTime = Some(dt) }
+                        |> Champs.Requests.addOrUpdateBattle
+                        do! Async.Sleep(System.TimeSpan.FromSeconds(5.0))
+                    | false, _ -> ()
+                | None -> ()
             with _ -> ()
-            // to not spam with requests
-            do! Async.Sleep(System.TimeSpan.FromSeconds(15.0))
-}
+        if cacheDict.Count > 0 then
+            let _, max = cacheDict.[cacheDict.Keys |> Seq.max]
+            Champs.Requests.setLatestTrackedBattleDT max
+    }
 
 let ct = new CancellationTokenSource()
 let refresh =
     async {
         while true do
+            try
+                do! updateBattles
+            with _ -> ()
+            do! Async.Sleep (System.TimeSpan.FromMinutes(2.0))
             try
                 Champs.Requests.refresh()
             with _ -> ()
@@ -34,10 +57,6 @@ let refresh =
                 Champs.Requests.refreshIPFS()
             with _ -> ()
             do! Async.Sleep (System.TimeSpan.FromMinutes(4.0))
-            try
-                do! updateIpfs
-            with _ -> ()
-            do! Async.Sleep (System.TimeSpan.FromMinutes(2.0))
     }
 Async.Start(refresh, ct.Token)
 
@@ -56,6 +75,8 @@ module Route =
 
     let [<Literal>] leaderboard = "leaderboard"
     let [<Literal>] leaderboardRange = "leaderboard/{range}"
+
+    let [<Literal>] stats = "/stats"
 
 let endpoints =
     [
@@ -120,7 +141,14 @@ let endpoints =
             Champs.Requests.getLeaderBoardForBattles range
             |> Champs.Pages.Leaderboard.leaderBoardPage
             |> UI.layout "Leaderboard"
-            |> fun html -> Response.ofHtml html ctx)    
+            |> fun html -> Response.ofHtml html ctx)
+
+        get Route.stats (fun ctx ->
+            let route = Request.getRoute ctx
+            Champs.Requests.getActivity()
+            |> Champs.Pages.Stats.statsPage
+            |> UI.layout $"Activity"
+            |> fun html -> Response.ofHtml html ctx)
     ]
 
 let wapp = WebApplication.Create()

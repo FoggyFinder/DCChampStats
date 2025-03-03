@@ -1,4 +1,5 @@
 ﻿namespace Champs.Core
+open System
 
 type Contributor = {
     Name: string
@@ -18,6 +19,7 @@ type Battle = {
     BattleNum: uint64
     Description: string
     Wager: decimal
+    UTCDateTime: DateTime option
 }
 
 type ChampInfo = {
@@ -67,22 +69,41 @@ type LeaderBoard = {
     Leaderboard: ChampInfo list
 }
 
+type Activity = {
+    Today: int
+    Yesterday: int
+    Week: int
+    Month: int
+    Untracked: int
+    Total: int
+} with 
+    static member Empty = {
+        Today = 0
+        Yesterday = 0
+        Week = 0
+        Month = 0
+        Total = 0
+        Untracked = 0
+    }
+
 [<RequireQualifiedAccess>]
 module Utils =
     open System
     open Newtonsoft.Json.Linq
 
     let battleFromString (battleNum:uint64) (content:string) =
-        try 
+        try
+            let json = JObject.Parse(content)
             let key = 
-                JObject.Parse(content).SelectToken("value").Value<string>()
+                json.SelectToken("value").Value<string>()
                 |> System.Convert.FromBase64String
                 |> System.Text.ASCIIEncoding.ASCII.GetString
             let arr = key.Split(">")
             let winner = { Name = arr.[1]; AssetId = UInt64.Parse(arr.[0]); Ipfs = None }
             let loser =  { Name = arr.[3]; AssetId = UInt64.Parse(arr.[2]); Ipfs = None }
             let wager = decimal (UInt64.Parse(arr.[4])) / 1000000M
-            { BattleNum = battleNum; Winner = winner; Loser = loser; Description = arr[5].Trim(); Wager = wager }
+            { BattleNum = battleNum; Winner = winner; Loser = loser; Description = arr[5].Trim();
+              Wager = wager; UTCDateTime = None }
             |> Some
         with e ->
             None
