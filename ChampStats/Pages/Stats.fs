@@ -30,7 +30,7 @@ let statsPage (activity: Activity) =
                 ]
                 
                 Elem.tr [] [
-                    Elem.td [] [ Text.raw "Untracked" ]
+                    Elem.td [] [ Text.raw "Untracked *" ]
                     Elem.td [] [ Text.raw (string activity.Untracked) ]
                 ]
 
@@ -39,5 +39,7 @@ let statsPage (activity: Activity) =
                     Elem.td [] [ Text.raw (string activity.Total) ]
                 ]
             ]
+        yield Text.raw $"* - currently only new battles are tracked. Old smart-contract didn't contain easy way to get `battleNum` from tx"
+        yield Elem.br []
         yield Text.raw $"Server time: {DateTime.Now}"
     ]

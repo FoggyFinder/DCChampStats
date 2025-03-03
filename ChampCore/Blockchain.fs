@@ -38,10 +38,9 @@ let convertRoundNumberToDateTime(roundNumber:uint64) =
         let! block = lookUpApi.lookupBlockAsync(roundNumber) |> Async.AwaitTask
         return DateTimeOffset.FromUnixTimeSeconds(int64 block.Timestamp).UtcDateTime
     } |> Async.RunSynchronously
-// 1996-12-19T16:39:57-08:00
+
 let getApplAccountTransactions(address:string, afterTimeOpt:DateTime option) =
     let afterTimeStr = afterTimeOpt |> Option.map(fun dt -> dt.ToString("yyyy-MM-dd")) |> Option.defaultValue ""
-    printfn "Get txs after %s" afterTimeStr
     let rec getTransactions (next:string) acc = 
         async {
             let! r = lookUpApi.lookupAccountTransactionsAsync(address,next=next,txType="appl", afterTime=afterTimeStr) |> Async.AwaitTask

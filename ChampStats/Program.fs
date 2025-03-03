@@ -14,42 +14,31 @@ let updateBattles =
     let cacheDict = Dictionary<uint64, (uint64 * DateTime)>()
     let updateCache() =
         let afterDT = Champs.Requests.latestTrackedBattleDT()
-        printfn "cache is updating %A" afterDT
         let newValues = Champs.Blockchain.getBattlesDateTimes afterDT
         newValues
         |> Seq.iter(fun (key, v) ->
             if cacheDict.ContainsKey key then
                 cacheDict.Remove key |> ignore
             cacheDict.Add(key, v))
-        printfn "cache is updated %A; %A" cacheDict.Count afterDT
-
-    let getDateTimeForBattleNum (battleNum:uint64) =
-        match cacheDict.TryGetValue battleNum with
-        | true, (_, dt) -> Some dt
-        | false, _ -> None
 
     async {
         updateCache()
         let xs = Champs.Requests.battlesWithoutTimestamp()
         for battleNum in xs do
             try
-                printfn "Updating %A battle" battleNum
                 match Champs.Requests.getBattle battleNum with
                 | Some battle ->
-                    match getDateTimeForBattleNum battleNum with
-                    | Some dt ->
-                        printfn "Set %A for %A" dt battleNum
+                    match cacheDict.TryGetValue battleNum with
+                    | true, (_, dt) ->
                         { battle with UTCDateTime = Some(dt) }
                         |> Champs.Requests.addOrUpdateBattle
-                        // to not spam with requests
                         do! Async.Sleep(System.TimeSpan.FromSeconds(5.0))
-                    | None -> ()
+                    | false, _ -> ()
                 | None -> ()
             with _ -> ()
         if cacheDict.Count > 0 then
             let _, max = cacheDict.[cacheDict.Keys |> Seq.max]
-            printfn "save last processed value"
-            Champs.Requests.setLatestTrackedattleDT max
+            Champs.Requests.setLatestTrackedBattleDT max
     }
 
 let ct = new CancellationTokenSource()

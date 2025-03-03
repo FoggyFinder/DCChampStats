@@ -169,9 +169,9 @@ let getActivity() =
             | Some dt ->
                 let localDT = dt.ToLocalTime()
                 if localDT.Date = today.Date then
-                    { activity with Today = activity.Today + 1 }
+                    { activity with Today = activity.Today + 1; Week = activity.Week + 1; Month = activity.Month + 1 }
                 elif localDT.Date = today.AddDays(-1).Date then
-                    { activity with Yesterday = activity.Yesterday + 1 }
+                    { activity with Yesterday = activity.Yesterday + 1; Week = activity.Week + 1; Month = activity.Month + 1 }
                 elif localDT.Date > today.AddDays(-7).Date then
                     { activity with Week = activity.Week + 1 }
                 elif localDT.Date > today.AddMonths(-1).Date then
@@ -277,7 +277,7 @@ let getBattle(battleId:uint64) =
 let getBattles() = storage.GetAllBattles()
 let battlesWithoutTimestamp() = storage.BattlesWithoutTimestamp()
 let latestTrackedBattleDT() = storage.GetLastTrackedBattleDateTime()
-let setLatestTrackedattleDT = storage.SetLastTrackedBattleDateTime
+let setLatestTrackedBattleDT = storage.SetLastTrackedBattleDateTime
 
 let client = new HttpClient()
 let getContributors() =
