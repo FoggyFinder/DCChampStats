@@ -11,7 +11,8 @@ module internal SQL =
         CREATE TABLE IF NOT EXISTS Champ (
 	        ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             AssetID INTEGER NOT NULL UNIQUE,
-            Name TEXT NOT NULL
+            Name TEXT NOT NULL,
+            IPFS TEXT
         );
 
         CREATE TABLE IF NOT EXISTS Battle (
@@ -21,6 +22,7 @@ module internal SQL =
             LoserID INTEGER NOT NULL,
             Description TEXT NOT NULL,
             Wager INTEGER NOT NULL,
+            Timestamp DATETIME,
             FOREIGN KEY (WinnerID)
                REFERENCES Champ (ID),
             FOREIGN KEY (LoserID)
