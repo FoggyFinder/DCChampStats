@@ -3,7 +3,7 @@
 type DbKeys =
     | LastTrackedBattle
     | LastTrackedTraitSwap
-    | LastTrackedBattleDateTime
+    | LastTrackedBattleDateTime2
 
 [<RequireQualifiedAccess>]
 module internal SQL =
@@ -147,7 +147,7 @@ type SqliteStorage(cs: string)=
     member _.GetLastTrackedBattleDateTime() =
         use conn = new SqliteConnection(cs)
         Db.newCommand SQL.GetValueByKey conn
-        |> Db.setParams [ "key", SqlType.String (DbKeys.LastTrackedBattleDateTime.ToString()) ]
+        |> Db.setParams [ "key", SqlType.String (DbKeys.LastTrackedBattleDateTime2.ToString()) ]
         |> Db.query (fun rd -> rd.ReadDateTime "Value")
         |> List.tryHead
         
@@ -155,7 +155,7 @@ type SqliteStorage(cs: string)=
         use conn = new SqliteConnection(cs)
         Db.newCommand SQL.SetKeyValue conn
         |> Db.setParams [
-            "key", SqlType.String (DbKeys.LastTrackedBattleDateTime.ToString())
+            "key", SqlType.String (DbKeys.LastTrackedBattleDateTime2.ToString())
             "value", SqlType.DateTime dt
         ]
         |> Db.exec    

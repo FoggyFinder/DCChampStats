@@ -16,7 +16,7 @@ let httpClient = HttpClientConfigurator.ConfigureHttpClient(ALGOD_API_ADDR, ALGO
 let lookUpApi = LookupApi(httpClient)
 let [<Literal>] ArenaContract = 1053328572UL
 let [<Literal>] DarkCoinChampsCreator = "L6VIKAHGH4D7XNH3CYCWKWWOHYPS3WYQM6HMIPNBVSYZWPNQ6OTS5VERQY"
-let [<Literal>] ArenaCreator = "762FFO2SIDJG2H7SXU5BQLQJ4Q5BQPGKKJGS2LEDQSJ7N5EMB2VVZMSMXM"
+let [<Literal>] ArenaAppWallet = "VWNGMYLU4LGHU2Z2BYHP54IUNU3GJROHG2LOOPFH5JAES3K7W4TBODC6TU"
 
 let getApp() = 
     async { 
@@ -53,7 +53,7 @@ let getApplAccountTransactions(address:string, afterTimeOpt:DateTime option) =
     getTransactions null Seq.empty |> Async.RunSynchronously
 
 let getBattlesDateTimes(afterTimeOpt:DateTime option) =
-    getApplAccountTransactions(ArenaCreator, afterTimeOpt)
+    getApplAccountTransactions(ArenaAppWallet, afterTimeOpt)
     |> Seq.filter(fun tx -> tx.ApplicationTransaction <> null && tx.ApplicationTransaction.ApplicationId = ArenaContract)
     |> Seq.choose(fun tx ->
         try
@@ -62,6 +62,11 @@ let getBattlesDateTimes(afterTimeOpt:DateTime option) =
             match txT with
             | "writeBattle" ->
                 let battleStr = args[1] |> System.Text.ASCIIEncoding.ASCII.GetString
+                let battleNum = battleStr.Replace("Battle", "") |> Utils.toUInt64
+                let dt = convertRoundNumberToDateTime tx.ConfirmedRound.Value
+                battleNum |> Option.map(fun v -> v, dt)
+            | "fight" when args.Length = 5 ->
+                let battleStr = args[2] |> System.Text.ASCIIEncoding.ASCII.GetString
                 let battleNum = battleStr.Replace("Battle", "") |> Utils.toUInt64
                 let dt = convertRoundNumberToDateTime tx.ConfirmedRound.Value
                 battleNum |> Option.map(fun v -> v, dt)
