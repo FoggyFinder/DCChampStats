@@ -86,6 +86,13 @@ type Activity = {
         Untracked = 0
     }
 
+type ActivityReport = {
+    Activity: Activity
+    Warriors: int * int
+    BattlesByDay: list<DateTime * int>
+    MonthlyBattles: list<DateTime * int>
+}
+
 [<RequireQualifiedAccess>]
 module Utils =
     open System
