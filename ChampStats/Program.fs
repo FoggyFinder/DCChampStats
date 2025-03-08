@@ -66,7 +66,7 @@ let refresh =
             try
                 Champs.Requests.refreshIPFS()
             with _ -> ()
-            do! Async.Sleep (System.TimeSpan.FromMinutes(1.0))
+            do! Async.Sleep (System.TimeSpan.FromMinutes(10.0))
     }
 Async.Start(refresh, ct.Token)
 
