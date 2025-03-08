@@ -64,6 +64,13 @@ let homePage(contributors: Contributor list) =
                 yield Elem.a [ Attr.href "/faq" ]
                     [ Text.raw "/faq" ]
             ]
+
+            yield Elem.li [] [
+                yield Text.code "/stats"
+                yield Text.raw " - recent usage stats (WIP), "
+                yield Elem.a [ Attr.href "/stats" ]
+                    [ Text.raw "/stats" ]
+            ]
         ]
         yield Elem.hr []
         yield Elem.p [] [
@@ -139,6 +146,13 @@ let homePage(contributors: Contributor list) =
                     [ Text.raw $"SQLite" ] 
                 
                 yield Text.raw " - to store some info to avoid unnecessary request to API"
+            ]
+
+            yield Elem.li [] [
+                yield Elem.a [ Attr.href "https://plotly.net/" ] 
+                    [ Text.raw $"Plotly.NET" ] 
+                
+                yield Text.raw " - to draw charts"
             ]
         ]
     ]

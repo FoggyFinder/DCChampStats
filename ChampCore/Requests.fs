@@ -9,6 +9,12 @@ open System.Net.Http
 
 let private storage = SqliteStorage("Data Source=dcchamps1.sqlite; Cache=Shared;Foreign Keys = True")
 
+let getAllChampsId() =
+    getAccountCreatedAssets DarkCoinChampsCreator
+    |> Seq.map(fun m -> m.Index)
+
+let allChamps = getAllChampsId() |> Set.ofSeq
+
 let private processBattle (battle:Battle) =
     if storage.ChampExists battle.Winner.AssetId |> not then
         storage.AddOrUpdateChamp battle.Winner
@@ -160,25 +166,69 @@ let getLeaderBoardForBattles(start:uint64 option, end': uint64 option) =
             { Battles = LeaderboardRange.Range(x, y); Leaderboard = getLeaderBoard battles }
 
 open System
-let getActivity() =
+open System.Collections.Generic
+let getActivityReport() =
     let today = DateTime.Now
-    storage.GetAllBattles()
-    |> List.fold(fun activity battle ->
-        let activity' =
-            match battle.UTCDateTime with
-            | Some dt ->
-                let localDT = dt.ToLocalTime()
-                if localDT.Date = today.Date then
-                    { activity with Today = activity.Today + 1; Week = activity.Week + 1; Month = activity.Month + 1 }
-                elif localDT.Date = today.AddDays(-1).Date then
-                    { activity with Yesterday = activity.Yesterday + 1; Week = activity.Week + 1; Month = activity.Month + 1 }
-                elif localDT.Date > today.AddDays(-7).Date then
-                    { activity with Week = activity.Week + 1 }
-                elif localDT.Date > today.AddMonths(-1).Date then
-                    { activity with Month = activity.Month + 1 }
-                else activity
-            | None -> { activity with Untracked = activity.Untracked + 1 }
-        { activity' with Total = activity'.Total + 1 }) Activity.Empty
+    let battles =
+        storage.GetAllBattles()
+        |> List.sortBy(fun b -> b.BattleNum)
+
+    let activity =
+        battles
+        |> List.fold(fun activity battle ->
+            let activity' =
+                match battle.UTCDateTime with
+                | Some dt ->
+                    let localDT = dt.ToLocalTime()
+                    if localDT.Date = today.Date then
+                        { activity with Today = activity.Today + 1; Week = activity.Week + 1; Month = activity.Month + 1 }
+                    elif localDT.Date = today.AddDays(-1).Date then
+                        { activity with Yesterday = activity.Yesterday + 1; Week = activity.Week + 1; Month = activity.Month + 1 }
+                    elif localDT.Date > today.AddDays(-7).Date then
+                        { activity with Week = activity.Week + 1 }
+                    elif localDT.Date > today.AddMonths(-1).Date then
+                        { activity with Month = activity.Month + 1 }
+                    else activity
+                | None -> { activity with Untracked = activity.Untracked + 1 }
+            { activity' with Total = activity'.Total + 1 }) Activity.Empty
+    
+    let warriors =
+        battles
+        |> List.collect(fun b -> [b.Loser.AssetId;b.Winner.AssetId])
+        |> List.distinct
+        |> List.filter allChamps.Contains
+        |> List.length
+
+    let monthlyDays =
+        today.AddDays(-30)
+        |> List.unfold(fun state ->
+            if state.Date < today.Date then
+                let v = state.AddDays(1).Date
+                Some (KeyValuePair(v, 0), v)
+            else None)
+        |> Dictionary
+    
+    let battles =
+        battles
+        |> List.choose(fun battle ->
+            battle.UTCDateTime
+            |> Option.map(fun dt ->
+                let localDt = dt.ToLocalTime()
+                if monthlyDays.ContainsKey localDt.Date then
+                    monthlyDays.[localDt.Date] <- monthlyDays.[localDt.Date] + 1
+                localDt))
+        |> List.groupBy id
+        |> List.mapFold (fun state (key, group) ->
+            let acc = state + group.Length
+            (key, acc), acc) 0
+        |> fst
+    
+    {
+        Activity = activity
+        Warriors = warriors, allChamps.Count - warriors
+        BattlesByDay = battles
+        MonthlyBattles = monthlyDays |> Seq.map(fun kv -> kv.Key, kv.Value) |> Seq.toList      
+    }
 
 let refresh() =
     let lastTracked = storage.GetLastTrackedBattle() |> Option.bind Utils.toUInt64 |> Option.defaultValue 0UL
@@ -215,12 +265,6 @@ let refreshIPFS() =
                 ))
             storage.SetLastTrackedTraitSwap round
     )
-
-let getAllChampsId() =
-    getAccountCreatedAssets DarkCoinChampsCreator
-    |> Seq.map(fun m -> m.Index)
-
-let allChamps = getAllChampsId() |> Set.ofSeq
 
 let getChampsForWallet(wallet:string) =
     getAssets wallet

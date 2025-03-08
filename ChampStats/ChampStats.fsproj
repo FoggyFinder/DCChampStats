@@ -20,6 +20,7 @@
   <ItemGroup>
     <PackageReference Include="Falco" Version="5.0.0" />
     <PackageReference Include="Falco.Markup" Version="1.1.1" />
+    <PackageReference Include="Plotly.NET" Version="5.1.0" />
   </ItemGroup>
 
   <ItemGroup>

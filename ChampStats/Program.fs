@@ -155,9 +155,9 @@ let endpoints =
 
         get Route.stats (fun ctx ->
             let route = Request.getRoute ctx
-            Champs.Requests.getActivity()
+            Champs.Requests.getActivityReport()
             |> Champs.Pages.Stats.statsPage
-            |> UI.layout $"Activity"
+            |> UI.chart "Activity"
             |> fun html -> Response.ofHtml html ctx)
     ]
 
