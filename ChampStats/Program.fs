@@ -13,7 +13,9 @@ open System.Collections.Generic
 let updateBattles =
     let cacheDict = Dictionary<uint64, (uint64 * DateTime)>()
     let updateCache() =
-        let afterDT = Champs.Requests.latestTrackedBattleDT()
+        let afterDT =
+            if cacheDict.Count = 0 then None
+            else Champs.Requests.latestTrackedBattleDT()
         let newValues = Champs.Blockchain.getBattlesDateTimes afterDT
         newValues
         |> Seq.iter(fun (key, v) ->
@@ -22,8 +24,12 @@ let updateBattles =
             cacheDict.Add(key, v))
 
     async {
-        updateCache()
         let xs = Champs.Requests.battlesWithoutTimestamp()
+        let cacheNeedsUpdating = xs |> List.exists(cacheDict.ContainsKey >> not)
+        if cacheNeedsUpdating then
+            cacheDict.Clear()
+            updateCache()
+        let mutable hasChanged = false
         for battleNum in xs do
             try
                 match Champs.Requests.getBattle battleNum with
@@ -32,13 +38,17 @@ let updateBattles =
                     | true, (_, dt) ->
                         { battle with UTCDateTime = Some(dt) }
                         |> Champs.Requests.addOrUpdateBattle
+                        hasChanged <- true
                         do! Async.Sleep(System.TimeSpan.FromSeconds(5.0))
                     | false, _ -> ()
                 | None -> ()
             with _ -> ()
-        if cacheDict.Count > 0 then
-            let _, max = cacheDict.[cacheDict.Keys |> Seq.max]
-            Champs.Requests.setLatestTrackedBattleDT max
+        if hasChanged then
+            Champs.Requests.getBattles()
+            |> List.sortBy(fun b -> b.BattleNum)
+            |> List.takeWhile(fun b -> b.UTCDateTime.IsSome)
+            |> List.tryLast
+            |> Option.iter(fun b -> Champs.Requests.setLatestTrackedBattleDT b.UTCDateTime.Value)
     }
 
 let ct = new CancellationTokenSource()
@@ -46,17 +56,17 @@ let refresh =
     async {
         while true do
             try
+                Champs.Requests.refresh()
+            with _ -> ()
+            do! Async.Sleep (System.TimeSpan.FromMinutes(2.0))
+            try
                 do! updateBattles
             with _ -> ()
             do! Async.Sleep (System.TimeSpan.FromMinutes(2.0))
             try
-                Champs.Requests.refresh()
-            with _ -> ()
-            do! Async.Sleep (System.TimeSpan.FromMinutes(4.0))
-            try
                 Champs.Requests.refreshIPFS()
             with _ -> ()
-            do! Async.Sleep (System.TimeSpan.FromMinutes(4.0))
+            do! Async.Sleep (System.TimeSpan.FromMinutes(1.0))
     }
 Async.Start(refresh, ct.Token)
 

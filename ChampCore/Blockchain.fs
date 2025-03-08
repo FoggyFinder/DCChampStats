@@ -14,9 +14,9 @@ let ALGOD_API_TOKEN = ""
 let httpClient = HttpClientConfigurator.ConfigureHttpClient(ALGOD_API_ADDR, ALGOD_API_TOKEN)
 
 let lookUpApi = LookupApi(httpClient)
+let searchApi = SearchApi(httpClient)
 let [<Literal>] ArenaContract = 1053328572UL
 let [<Literal>] DarkCoinChampsCreator = "L6VIKAHGH4D7XNH3CYCWKWWOHYPS3WYQM6HMIPNBVSYZWPNQ6OTS5VERQY"
-let [<Literal>] ArenaAppWallet = "VWNGMYLU4LGHU2Z2BYHP54IUNU3GJROHG2LOOPFH5JAES3K7W4TBODC6TU"
 
 let getApp() = 
     async { 
@@ -39,11 +39,11 @@ let convertRoundNumberToDateTime(roundNumber:uint64) =
         return DateTimeOffset.FromUnixTimeSeconds(int64 block.Timestamp).UtcDateTime
     } |> Async.RunSynchronously
 
-let getApplAccountTransactions(address:string, afterTimeOpt:DateTime option) =
+let getApplAccountTransactions(applId:uint64, afterTimeOpt:DateTime option) =
     let afterTimeStr = afterTimeOpt |> Option.map(fun dt -> dt.ToString("yyyy-MM-dd")) |> Option.defaultValue ""
     let rec getTransactions (next:string) acc = 
         async {
-            let! r = lookUpApi.lookupAccountTransactionsAsync(address,next=next,txType="appl", afterTime=afterTimeStr) |> Async.AwaitTask
+            let! r = searchApi.searchForTransactionsAsync(applicationId=Nullable(applId),next=next,txType="appl", afterTime=afterTimeStr) |> Async.AwaitTask
             let acc' = acc |> Seq.append r.Transactions
             if System.String.IsNullOrWhiteSpace(r.NextToken) then
                 return acc'
@@ -53,24 +53,21 @@ let getApplAccountTransactions(address:string, afterTimeOpt:DateTime option) =
     getTransactions null Seq.empty |> Async.RunSynchronously
 
 let getBattlesDateTimes(afterTimeOpt:DateTime option) =
-    getApplAccountTransactions(ArenaAppWallet, afterTimeOpt)
-    |> Seq.filter(fun tx -> tx.ApplicationTransaction <> null && tx.ApplicationTransaction.ApplicationId = ArenaContract)
+    getApplAccountTransactions(ArenaContract, afterTimeOpt)
     |> Seq.choose(fun tx ->
         try
             let args = tx.ApplicationTransaction.ApplicationArgs |> Seq.toArray
-            let txT = args[0] |> System.Text.ASCIIEncoding.ASCII.GetString
-            match txT with
-            | "writeBattle" ->
-                let battleStr = args[1] |> System.Text.ASCIIEncoding.ASCII.GetString
-                let battleNum = battleStr.Replace("Battle", "") |> Utils.toUInt64
-                let dt = convertRoundNumberToDateTime tx.ConfirmedRound.Value
-                battleNum |> Option.map(fun v -> v, dt)
-            | "fight" when args.Length = 5 ->
-                let battleStr = args[2] |> System.Text.ASCIIEncoding.ASCII.GetString
-                let battleNum = battleStr.Replace("Battle", "") |> Utils.toUInt64
-                let dt = convertRoundNumberToDateTime tx.ConfirmedRound.Value
-                battleNum |> Option.map(fun v -> v, dt)
-            | _ -> None
+            if args.Length > 0 then
+                let txT = args[0] |> System.Text.ASCIIEncoding.ASCII.GetString
+                match txT with
+                | "writeBattle" -> args[1] |> System.Text.ASCIIEncoding.ASCII.GetString |> Some
+                | "fight" when args.Length = 5 -> args[2] |> System.Text.ASCIIEncoding.ASCII.GetString |> Some
+                | _ -> None
+                |> Option.bind(fun battleStr ->
+                    battleStr.Replace("Battle", "")
+                    |> Utils.toUInt64
+                    |> Option.map(fun v -> v, convertRoundNumberToDateTime tx.ConfirmedRound.Value))
+            else None
         with exp ->
             printfn "%A" exp
             None)
