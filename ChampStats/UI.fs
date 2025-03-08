@@ -1,10 +1,9 @@
 ﻿module UI
 
 open Falco.Markup
-let [<Literal>] IPFS = "https://ipfs.dark-coin.io/ipfs/"
 open Plotly.NET
-open System.Reflection
-open System.IO
+
+let [<Literal>] IPFS = "https://ipfs.dark-coin.io/ipfs/"
 
 let private fullLayout (usePlotly:bool) (title:string) (content : XmlNode list) =
     Elem.html [ Attr.lang "en"; ] [
