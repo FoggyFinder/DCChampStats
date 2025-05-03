@@ -71,6 +71,13 @@ let homePage(contributors: Contributor list) =
                 yield Elem.a [ Attr.href "/stats" ]
                     [ Text.raw "/stats" ]
             ]
+
+            yield Elem.li [] [
+                yield Text.code "/levels"
+                yield Text.raw " - Champ's levels in Dragon's Horde game, "
+                yield Elem.a [ Attr.href "/levels" ]
+                    [ Text.raw "/levels" ]
+            ]
         ]
         yield Elem.hr []
         yield Elem.p [] [
@@ -128,8 +135,8 @@ let homePage(contributors: Contributor list) =
             ]
 
             yield Elem.li [] [
-                yield Elem.a [ Attr.href "https://github.com/FrankSzendzielarz/dotnet-algorand-sdk" ] 
-                    [ Text.raw $".NET Algorand SDK (v2)" ] 
+                yield Elem.a [ Attr.href "https://github.com/scholtz/dotnet-algorand-sdk" ] 
+                    [ Text.raw $".NET Algorand SDK (v4)" ] 
                 
                 yield Text.raw " - The .NET Algorand SDK is a dotnet library for communicating and interacting with the Algorand network from .NET applications"
             ]

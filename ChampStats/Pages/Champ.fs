@@ -176,8 +176,47 @@ let champPage (champDetailedO: ChampDetailed option) =
             ]
      ]
 
-let champsPage (champs: Champs.Core.ChampInfo list) =
+let champsPage (champs: ChampInfo list) =
     [
         yield Text.p $"All champs info"
         yield UI.getChampInfoTable champs
+    ]
+
+let champsHordePage (champs:ChampHorde list) =
+    let getChampLevelsTable (champs:ChampHorde list) =
+        let header =
+            Elem.tr [ ] [
+                Elem.th [ ] [ Text.raw "" ]
+                Elem.th [ ] [ Text.raw "Icon" ]
+                Elem.th [ ] [ Text.raw "Name" ]
+                Elem.th [ ] [ Text.raw "Level" ]
+                Elem.th [ ] [ ]
+                Elem.th [ ] [ Text.raw "Progress" ]
+            ]
+        let items = 
+            champs
+            |> List.sortByDescending(fun ch -> ch.Xp)
+            |> List.mapi(fun i ch ->
+                let nextLvl = Horde.getCurrentLevelXp ch.Xp
+                let progress = Text.raw $"{ch.Xp} / {nextLvl}"
+                Elem.tr [] [
+                    Elem.td [ ] [ Text.raw $"{i + 1}" ]
+                    Elem.td [ ] [ ch.Champ.Ipfs |> UI.getIpfsImg "champImgSmall" ]
+                    Elem.td [ ] [ Elem.a [ Attr.href $"https://dark-coin.com/arena/dragonshorde/{ch.Champ.AssetId}"; Attr.targetBlank ] [ Text.raw $"{ch.Champ.Name}" ] ]
+                    Elem.td [ ] [ Text.raw $"{ch.Level}" ]
+                    Elem.td [ ] [
+                        Elem.progress [ Attr.max "100"; Attr.valueString ((ch.Xp * 100UL)/ nextLvl) ]
+                            [ progress ]
+                    ]
+                    Elem.td [ ] [ progress ]
+
+            ])
+        Elem.table [ ] [
+            yield header
+            yield! items
+        ]
+
+    [
+        yield Text.p $"All champs levels"
+        yield getChampLevelsTable champs
     ]

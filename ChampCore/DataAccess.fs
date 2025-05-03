@@ -4,6 +4,7 @@ type DbKeys =
     | LastTrackedBattle
     | LastTrackedTraitSwap
     | LastTrackedBattleDateTime2
+    | LastTrackedHordeXpChanges
 
 [<RequireQualifiedAccess>]
 module internal SQL =
@@ -13,6 +14,14 @@ module internal SQL =
             AssetID INTEGER NOT NULL UNIQUE,
             Name TEXT NOT NULL,
             IPFS TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS ChampHorde (
+	        ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            ChampID INTEGER NOT NULL UNIQUE,
+            Xp INTEGER NOT NULL,
+            FOREIGN KEY (ChampID)
+               REFERENCES Champ (ID)
         );
 
         CREATE TABLE IF NOT EXISTS Battle (
@@ -65,6 +74,10 @@ module internal SQL =
         INSERT INTO Champ(AssetID, Name, IPFS) VALUES(@assetId, @name, @ipfs)
         ON CONFLICT(AssetID) DO UPDATE SET Name = @name, IPFS = @ipfs;"
 
+    let AddOrUpdateChampHorde = "
+        INSERT INTO ChampHorde(ChampID, Xp) VALUES(@champId, @xp)
+        ON CONFLICT(ChampID) DO UPDATE SET Xp = @xp;"
+
     let AddOrUpdateBattle = "
         INSERT INTO Battle(BattleNum, WinnerID, LoserID, Description, Wager, Timestamp)
         VALUES(@battleNum, @winnerId, @loserId, @description, @wager, @timestamp)
@@ -111,6 +124,11 @@ module internal SQL =
         JOIN Champ lc ON lc.ID = Battle.LoserID
     "
 
+    let GetAllChampsHorde = "
+        SELECT Name, AssetID, IPFS, Xp FROM ChampHorde
+        JOIN Champ c ON c.ID = ChampHorde.ChampID
+    "
+
 open Champs.Core
 open System.Collections.Generic
 open Microsoft.Data.Sqlite
@@ -144,13 +162,20 @@ type SqliteStorage(cs: string)=
         |> Db.query (fun rd -> rd.ReadString "Value")
         |> List.tryHead
 
-    member _.GetLastTrackedBattleDateTime() =
+    member _.GetLastTrackedHordeXpChangesDateTime() =
+        use conn = new SqliteConnection(cs)
+        Db.newCommand SQL.GetValueByKey conn
+        |> Db.setParams [ "key", SqlType.String (DbKeys.LastTrackedHordeXpChanges.ToString()) ]
+        |> Db.query (fun rd -> rd.ReadDateTime "Value")
+        |> List.tryHead
+ 
+     member _.GetLastTrackedBattleDateTime() =
         use conn = new SqliteConnection(cs)
         Db.newCommand SQL.GetValueByKey conn
         |> Db.setParams [ "key", SqlType.String (DbKeys.LastTrackedBattleDateTime2.ToString()) ]
         |> Db.query (fun rd -> rd.ReadDateTime "Value")
         |> List.tryHead
-        
+
     member t.SetLastTrackedBattleDateTime(dt:DateTime) =
         use conn = new SqliteConnection(cs)
         Db.newCommand SQL.SetKeyValue conn
@@ -185,6 +210,15 @@ type SqliteStorage(cs: string)=
         ]
         |> Db.exec
 
+    member t.SetLastTrackedHordeXpChangesDateTime(dt:DateTime) =
+        use conn = new SqliteConnection(cs)
+        Db.newCommand SQL.SetKeyValue conn
+        |> Db.setParams [
+            "key", SqlType.String (DbKeys.LastTrackedHordeXpChanges.ToString())
+            "value", SqlType.DateTime dt
+        ]
+        |> Db.exec    
+
     member t.ChampExists(assetId: uint64) =
         use conn = new SqliteConnection(cs)
         Db.newCommand SQL.ChampExists conn
@@ -206,11 +240,23 @@ type SqliteStorage(cs: string)=
             "ipfs", if champ.Ipfs.IsSome then SqlType.String champ.Ipfs.Value else SqlType.Null
         ]
         |> Db.exec
+
+    member t.AddOrUpdateChampHorde(champHorde:ChampHorde) =
+        match getChampIdByAssetId champHorde.Champ.AssetId with
+        | Some id ->
+            use conn = new SqliteConnection(cs)
+            Db.newCommand SQL.AddOrUpdateChampHorde conn
+            |> Db.setParams [
+                "champId", SqlType.Int64 <| int64 id
+                "xp", SqlType.Int64  <| int64 champHorde.Xp
+            ]
+            |> Db.exec
+        | None -> ()
         
     member t.AddOrUpdateBattle(battle:Battle) =
-        use conn = new SqliteConnection(cs)
         match getChampIdByAssetId battle.Winner.AssetId, getChampIdByAssetId battle.Loser.AssetId with
         | Some winnerId, Some loserId ->
+            use conn = new SqliteConnection(cs)
             Db.newCommand SQL.AddOrUpdateBattle conn
             |> Db.setParams [
                 "battleNum", SqlType.Int64 <| int64 battle.BattleNum
@@ -268,6 +314,19 @@ type SqliteStorage(cs: string)=
                 Name = reader.GetString(0);
                 AssetId = uint64 (reader.GetInt64(1))
                 Ipfs = if reader.IsDBNull(2) then None else Some(reader.GetString(2))
+            })
+
+    member t.GetAllChampsHorde() =
+        use conn = new SqliteConnection(cs)
+        Db.newCommand SQL.GetAllChampsHorde conn
+        |> Db.query(fun reader -> 
+            {
+                Champ = {
+                    Name = reader.GetString(0);
+                    AssetId = uint64 (reader.GetInt64(1))
+                    Ipfs = if reader.IsDBNull(2) then None else Some(reader.GetString(2))
+                }
+                Xp = uint64 (reader.GetInt64(3))
             })
 
     member t.GetAllBattles() : Battle list =

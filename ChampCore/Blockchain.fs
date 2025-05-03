@@ -1,6 +1,5 @@
 ﻿module Champs.Blockchain
 
-// https://github.com/FrankSzendzielarz/dotnet-algorand-sdk
 open Algorand
 open System
 open Algorand.Indexer
@@ -15,7 +14,9 @@ let httpClient = HttpClientConfigurator.ConfigureHttpClient(ALGOD_API_ADDR, ALGO
 
 let lookUpApi = LookupApi(httpClient)
 let searchApi = SearchApi(httpClient)
+
 let [<Literal>] ArenaContract = 1053328572UL
+let [<Literal>] DragonsHordeApp = 1870514811UL
 let [<Literal>] DarkCoinChampsCreator = "L6VIKAHGH4D7XNH3CYCWKWWOHYPS3WYQM6HMIPNBVSYZWPNQ6OTS5VERQY"
 
 let getApp() = 
@@ -78,20 +79,23 @@ let getBattlesDateTimes(afterTimeOpt:DateTime option) =
         k, max)
 
 let client = new HttpClient()
-let getBattle (battleNum: uint64) =
-    async {
-        try
-            let uri = $"https://mainnet-idx.algonode.cloud/v2/applications/{ArenaContract}/box?name=str:Battle{battleNum}"
-            use request = new System.Net.Http.HttpRequestMessage()
-            request.Method <- System.Net.Http.HttpMethod.Get
-            request.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"))
-            request.RequestUri <- System.Uri(uri)
-            let! response = client.SendAsync(request) |> Async.AwaitTask
-            let! content = response.Content.ReadAsStringAsync() |> Async.AwaitTask
-            return Utils.battleFromString battleNum content
-        with exp ->
-            return None
+let readJson (uri:string) =
+    async { 
+        use request = new System.Net.Http.HttpRequestMessage()
+        request.Method <- System.Net.Http.HttpMethod.Get
+        request.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"))
+        request.RequestUri <- System.Uri(uri)
+        let! response = client.SendAsync(request) |> Async.AwaitTask
+        let! content = response.Content.ReadAsStringAsync() |> Async.AwaitTask
+        return content
     } |> Async.RunSynchronously
+
+let getBattle (battleNum: uint64) =
+    let uri = $"https://mainnet-idx.algonode.cloud/v2/applications/{ArenaContract}/box?name=str:Battle{battleNum}"
+    try 
+        readJson uri
+        |> Utils.battleFromString battleNum
+    with _ -> None
 
 let getBoxBattles (start: uint64) (end': uint64) = 
     seq { for i in [start..end'] -> getBattle i }
@@ -134,6 +138,7 @@ let getAccountCreatedAssets(wallet:string) =
 
 open Newtonsoft.Json.Linq
 open Ipfs
+open System.Buffers.Binary
 
 let private ipfsFromACFG(acfg:Model.TransactionAssetConfig) =
     let addr = Algorand.Address(acfg.Params.Reserve)
@@ -201,3 +206,65 @@ let getLatestAcfgRoundForChamps() =
                 else trx |> Array.max |> Some
         }
     getTransactions null Seq.empty |> Async.RunSynchronously
+
+let getHordeBoxUnsafe (boxName:string) =
+    let bn = $"b64:{Uri.EscapeDataString(boxName)}"
+    let json = 
+        $"https://mainnet-idx.algonode.cloud/v2/applications/{DragonsHordeApp}/box?name={bn}"
+        |> readJson
+    let jObj = JObject.Parse(json)
+    jObj.SelectToken("value").Value<string>()
+    |> System.Convert.FromBase64String
+    |> BinaryPrimitives.ReadUInt64BigEndian
+
+let getAllXpsBoxes() =
+    let xpKey = System.Text.ASCIIEncoding.ASCII.GetBytes("xp")
+    try
+        let json =
+            $"https://mainnet-idx.algonode.cloud/v2/applications/{DragonsHordeApp}/boxes"
+            |> readJson
+        let jObj = JObject.Parse(json)
+        jObj.SelectTokens($"$..name")
+        |> Seq.map(fun t -> t.Value<string>())
+        |> Seq.choose(fun name ->
+            try
+                let bytes = name |> System.Convert.FromBase64String
+                let assetId, key = Array.splitAt (bytes.Length - 2) bytes
+                if key = xpKey then
+                    Some(assetId |> BinaryPrimitives.ReadUInt64BigEndian, getHordeBoxUnsafe name)
+                else None
+            with _ ->
+                None)
+        |> Seq.toList
+        |> Some
+    with _ ->
+        None
+
+let xpKey = System.Text.ASCIIEncoding.ASCII.GetBytes("xp")
+let getAssetsLevelsAfter(afterTimeOpt:DateTime option) =
+    getApplAccountTransactions(DragonsHordeApp, afterTimeOpt)
+    |> Seq.choose(fun tx ->
+        try
+            let args = tx.ApplicationTransaction.ApplicationArgs |> Seq.toArray
+            if args.Length > 0 then
+                let txT = args[0] |> System.Text.ASCIIEncoding.ASCII.GetString
+                match txT with
+                | "grantXp" ->
+                    let account = tx.ApplicationTransaction.ForeignAssets |> Seq.head
+                    let buffer = Array.zeroCreate 8
+                    let span = new Span<byte>(buffer)
+                    BinaryPrimitives.WriteUInt64BigEndian(span, account)
+                    let resultArr = Array.append buffer xpKey
+                    let boxName = resultArr |> System.Convert.ToBase64String
+                    (account, getHordeBoxUnsafe boxName)
+                    |> Some
+                | _ -> None
+            else None
+        with exp ->
+            printfn "%A" exp
+            None)
+    |> Seq.groupBy fst
+    |> Seq.map(fun (k, gr)->
+        let group = gr |> Seq.map snd |> Seq.toArray
+        let maxLvl = group |> Seq.max
+        k, maxLvl)

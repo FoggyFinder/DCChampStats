@@ -9,7 +9,8 @@ open Microsoft.Extensions.DependencyInjection
 open Microsoft.AspNetCore.HttpOverrides
 open System
 open System.Collections.Generic
-// ToDo: make thread-safe
+open Champs.Core
+
 let updateBattles =
     let cacheDict = Dictionary<uint64, (uint64 * DateTime)>()
     let updateCache() =
@@ -64,6 +65,10 @@ let refresh =
             with _ -> ()
             do! Async.Sleep (System.TimeSpan.FromMinutes(2.0))
             try
+                Champs.Requests.refreshHordeLevels()
+            with _ -> ()
+            do! Async.Sleep (System.TimeSpan.FromMinutes(6.0))
+            try
                 Champs.Requests.refreshIPFS()
             with _ -> ()
             do! Async.Sleep (System.TimeSpan.FromMinutes(10.0))
@@ -87,6 +92,8 @@ module Route =
     let [<Literal>] leaderboardRange = "leaderboard/{range}"
 
     let [<Literal>] stats = "/stats"
+
+    let [<Literal>] levels = "/levels"
 
 let endpoints =
     [
@@ -158,6 +165,12 @@ let endpoints =
             Champs.Requests.getActivityReport()
             |> Champs.Pages.Stats.statsPage
             |> UI.chart "Activity"
+            |> fun html -> Response.ofHtml html ctx)
+
+        get Route.levels (fun ctx ->
+            Champs.Requests.getAllChampsHorde()
+            |> Champs.Pages.Champs.champsHordePage
+            |> UI.layout "Champs levels"
             |> fun html -> Response.ofHtml html ctx)
     ]
 

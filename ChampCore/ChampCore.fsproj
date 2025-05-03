@@ -6,7 +6,7 @@
 	</PropertyGroup>
 	
 	<ItemGroup>
-		<PackageReference Include="Algorand2" Version="2.0.0.2023041509" />
+		<PackageReference Include="Algorand4" Version="4.0.2.2025041913" />
 		<PackageReference Include="Donald" Version="10.1.0" />
 		<PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
 	    <PackageReference Include="IpfsShipyard.Ipfs.Core" Version="0.6.1" />

@@ -13,6 +13,28 @@ type Champ = {
     Ipfs : string option
 }
 
+[<RequireQualifiedAccess>]
+module Horde =
+    let levels =
+        Seq.unfold(fun (lvl, xp) ->
+            let nextLevel = xp + (200UL * lvl) + 100UL
+            Some (nextLevel, (lvl + 1UL, nextLevel))
+        ) (0UL, 0UL)
+        |> Seq.truncate 50
+        |> Seq.toList
+    let getLvl (currentXP:uint64) =
+        (levels |> List.findIndex(fun xp -> currentXP < xp)) + 1
+    let getCurrentLevelXp (xp:uint64) =
+        let lvl = getLvl xp
+        levels[lvl - 1]
+
+type ChampHorde = {
+    Champ: Champ
+    Xp: uint64
+}
+  with
+    member ch.Level = Horde.getLvl ch.Xp
+
 type Battle = {
     Winner: Champ
     Loser: Champ
