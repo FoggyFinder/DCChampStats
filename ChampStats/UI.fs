@@ -5,6 +5,46 @@ open Plotly.NET
 
 let [<Literal>] IPFS = "https://ipfs.dark-coin.io/ipfs/"
 
+[<RequireQualifiedAccess>]
+module Route =
+    let [<Literal>] index = "/"
+    let [<Literal>] notFound = "/not-found"
+    let [<Literal>] faq = "/faq"
+
+    let [<Literal>] wallet = "/wallets/{wallet}"
+    let [<Literal>] champ = "/champs/{champ}"
+    let [<Literal>] champs = "/champs"
+
+    let [<Literal>] battle = "/battles/{battle}"
+    let [<Literal>] battles = "/battles"
+
+    let [<Literal>] leaderboard = "/leaderboard"
+    let [<Literal>] leaderboardRange = "/leaderboard/{range}"
+
+    let [<Literal>] stats = "/stats"
+
+    let [<Literal>] levels = "/levels"
+
+[<RequireQualifiedAccess>]
+module Uri =
+    let champ (champ:uint64) = Route.champ.Replace("{champ}", champ.ToString())
+    let battle (battle:uint64) = Route.battle.Replace("{battle}", battle.ToString())
+    //let wallet (wallet:string) = Route.wallet.Replace("{wallet}", wallet)
+    //let leaderboard (range:string) = Route.leaderboardRange.Replace("{range}", range)
+
+[<RequireQualifiedAccess>]
+module UiUtils =
+    open Champs.Core
+    let linkToChamp (champ:Champ) =
+        Elem.a [ Attr.href (Uri.champ champ.AssetId) ] [
+            Text.raw $"{champ.Name}"
+        ]
+
+    let linkToBattle (b:Battle) =
+        Elem.a [ Attr.href (Uri.battle b.BattleNum) ] [ 
+            Text.raw $"{b.BattleNum}"
+        ]
+
 let private fullLayout (usePlotly:bool) (title:string) (content : XmlNode list) =
     Elem.html [ Attr.lang "en"; ] [
         Elem.head [] [
@@ -22,7 +62,31 @@ let private fullLayout (usePlotly:bool) (title:string) (content : XmlNode list) 
             yield Elem.link [ Attr.rel "icon"; Attr.href "/favicon.ico"; Attr.type' "image/x-icon" ]
         ]
 
-        Elem.body [ ] [ Elem.main [] content ]
+        Elem.body [ ] [
+            Elem.header [ ] [
+                Elem.nav [] [
+                    Elem.a [ Attr.href Route.index ]
+                        [ Text.raw "Home" ]
+
+                    Elem.a [ Attr.href Route.faq ]
+                        [ Text.raw "FAQ" ]
+
+                    Elem.a [ Attr.href Route.leaderboard ]
+                        [ Text.raw "Leaderboard" ]
+                        
+                    Elem.a [ Attr.href Route.stats ]
+                        [ Text.raw "Stats" ]
+
+                    Elem.a [ Attr.href Route.levels ]
+                        [ Text.raw "Levels" ]
+                ]
+            ]
+            Elem.main [] content
+            Elem.footer [] [
+                Elem.a [ Attr.href "https://github.com/FoggyFinder/DCChampStats"; Attr.targetBlank ]
+                    [ Text.raw "Source code" ]
+            ]
+        ]
     ]
 
 let layout = fullLayout false
@@ -52,7 +116,7 @@ let getChampInfoTable (champs:Champs.Core.ChampInfo list) =
             Elem.tr [] [
                 Elem.td [ ] [ Text.raw $"{i + 1}" ]
                 Elem.td [ ] [ ch.Champ.Ipfs |> getIpfsImg "champImgSmall" ]
-                Elem.td [ ] [ Elem.a [ Attr.href $"/Champs/{ch.Champ.AssetId}" ] [ Text.raw $"{ch.Champ.Name}" ] ]
+                Elem.td [ ] [ UiUtils.linkToChamp ch.Champ ]
                 Elem.td [ ] [ Text.raw $"{ch.Wins}" ]
                 Elem.td [ ] [ Text.raw $"{ch.Loses}" ]
                 Elem.td [ ] [ Text.raw $"{ch.Fights}" ]

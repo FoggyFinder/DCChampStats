@@ -2,6 +2,7 @@
 
 open Falco.Markup
 open Champs.Core
+open UI
 
 let battlePage (battleo:Battle option) =
     [
@@ -22,15 +23,9 @@ let battlePage (battleo:Battle option) =
                   ]
 
                   Elem.tr [] [
-                    Elem.td [] [ 
-                        Elem.a [ Attr.href $"/Champs/{battle.Winner.AssetId}" ] [ Text.raw $"{battle.Winner.Name}" ]
-                    ]
+                    Elem.td [] [ UiUtils.linkToChamp battle.Winner ]
                     Elem.td [] [ Text.raw $"{battle.Description}" ]
-                    Elem.td [] [
-                        Elem.a [ Attr.href $"/Champs/{battle.Loser.AssetId}" ] [ 
-                            Text.raw $"{battle.Loser.Name}"
-                        ]
-                     ]
+                    Elem.td [] [ UiUtils.linkToChamp battle.Loser ]
                   ]
                 ] |> Elem.table []
     ]
@@ -53,13 +48,9 @@ let battlesPage (battles:Battle list) =
             |> List.mapi(fun i b ->
                 [
                     Elem.tr [] [
-                        Elem.td [] [ Elem.a [ Attr.href $"/Battles/{b.BattleNum}" ] [ Text.raw $"{b.BattleNum}" ] ]
-                        Elem.td [] [ Elem.a [ Attr.href $"/Champs/{b.Winner.AssetId}" ] [ 
-                            Text.raw $"{b.Winner.Name}" ]
-                        ]
-                        Elem.td [] [ Elem.a [ Attr.href $"/Champs/{b.Loser.AssetId}" ] [ 
-                            Text.raw $"{b.Loser.Name}" ]
-                        ]
+                        Elem.td [] [ UiUtils.linkToBattle b ]
+                        Elem.td [] [ UiUtils.linkToChamp b.Winner ]
+                        Elem.td [] [ UiUtils.linkToChamp b.Loser ] 
                         Elem.td [] [ Text.raw $"{b.Wager}" ]
                     ]
                     if i <= 10 then

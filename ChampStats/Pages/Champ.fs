@@ -2,6 +2,7 @@
 
 open Falco.Markup
 open Champs.Core
+open UI
 
 let champPage (champDetailedO: ChampDetailed option) =
     [
@@ -45,10 +46,7 @@ let champPage (champDetailedO: ChampDetailed option) =
                     Elem.td [] [ Text.raw $"Most fights against" ]
                     Elem.td [] [
                         match chst.MostFightsWith with
-                        | Some champ ->
-                            Elem.a [ Attr.href $"/Champs/{champ.AssetId}" ] [
-                                Text.raw $"{champ.Name}" 
-                            ]
+                        | Some champ -> UiUtils.linkToChamp champ
                         | None -> Text.raw ""
                     ]
                 ]
@@ -57,10 +55,7 @@ let champPage (champDetailedO: ChampDetailed option) =
                     Elem.td [] [ Text.raw $"Most wins against" ]
                     Elem.td [] [
                         match chst.MostWinsAgainst with
-                        | Some champ ->
-                            Elem.a [ Attr.href $"/Champs/{champ.AssetId}" ] [
-                                Text.raw $"{champ.Name}"
-                            ]
+                        | Some champ -> UiUtils.linkToChamp champ
                         | None -> Text.raw ""
                     ]
                 ]
@@ -69,10 +64,7 @@ let champPage (champDetailedO: ChampDetailed option) =
                     Elem.td [] [ Text.raw $"Most losses against" ]
                     Elem.td [] [ 
                         match chst.MostLosesAgainst with
-                        | Some champ ->
-                            Elem.a [ Attr.href $"/Champs/{champ.AssetId}" ] [
-                                Text.raw $"{champ.Name}" 
-                            ]
+                        | Some champ -> UiUtils.linkToChamp champ
                         | None -> Text.raw ""
                     ]
                 ]
@@ -157,10 +149,8 @@ let champPage (champDetailedO: ChampDetailed option) =
                         else b.Loser, "+"
                     [
                         Elem.tr [] [
-                            Elem.td [] [ Elem.a [ Attr.href $"/Battles/{b.BattleNum}" ] [ Text.raw $"{b.BattleNum}" ] ]
-                            Elem.td [] [ Elem.a [ Attr.href $"/Champs/{opponent.AssetId}" ] [ 
-                                Text.raw $"{opponent.Name}" ]
-                            ]
+                            Elem.td [] [ UiUtils.linkToBattle b ]
+                            Elem.td [] [ UiUtils.linkToChamp opponent ]
                             Elem.td [] [ Text.raw $"{b.Wager}" ]
                             Elem.td [] [ Text.raw $"{bres}" ]
                         ]

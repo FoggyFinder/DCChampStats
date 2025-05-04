@@ -2,6 +2,7 @@
 
 open Falco.Markup
 open Champs.Core
+open UI
 
 let leaderBoardPage (leaderboard:LeaderBoard) =
     [
@@ -24,7 +25,7 @@ let leaderBoardPage (leaderboard:LeaderBoard) =
                     Elem.tr [] [
                         Elem.td [] [ Text.raw ((i + 1).ToString()) ]
                         Elem.td [] [ ci.Champ.Ipfs |> UI.getIpfsImg "champImgSmall" ]
-                        Elem.td [] [ Elem.a [ Attr.href $"/Champs/{ci.Champ.AssetId}" ] [ Text.raw $"{ci.Champ.Name}" ] ]
+                        Elem.td [] [ UiUtils.linkToChamp ci.Champ ]
                         Elem.td [] [ Text.raw $"{ci.Wins - ci.Loses}" ]
                         Elem.td [] [ Text.raw $"{ci.Profit}" ]
                     ])

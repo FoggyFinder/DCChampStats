@@ -75,25 +75,7 @@ let refresh =
     }
 Async.Start(refresh, ct.Token)
 
-[<RequireQualifiedAccess>]
-module Route =
-    let [<Literal>] index = "/"
-    let [<Literal>] notFound = "/not-found"
-    let [<Literal>] faq = "/faq"
-
-    let [<Literal>] wallet = "/wallets/{wallet}"
-    let [<Literal>] champ = "champs/{champ}"
-    let [<Literal>] champs = "champs"
-
-    let [<Literal>] battle = "battles/{battle}"
-    let [<Literal>] battles = "battles"
-
-    let [<Literal>] leaderboard = "leaderboard"
-    let [<Literal>] leaderboardRange = "leaderboard/{range}"
-
-    let [<Literal>] stats = "/stats"
-
-    let [<Literal>] levels = "/levels"
+open UI
 
 let endpoints =
     [
