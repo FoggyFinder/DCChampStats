@@ -268,6 +268,7 @@ let refreshIPFS() =
 
 let getChampsForWallet(wallet:string) =
     getAssets wallet
+    |> Seq.filter(fun m -> m.Amount > 0UL)
     |> Seq.filter(fun m -> allChamps.Contains m.AssetId)
     |> Seq.choose(fun m ->
         if not <| storage.ChampExists m.AssetId then
@@ -283,6 +284,7 @@ let getAllChampsInfo() =
     storage.GetAllChamps()
     |> List.filter(fun c -> allChamps.Contains c.AssetId)
     |> List.choose(fun c -> getChampInfo c.AssetId)
+    |> List.filter(fun c -> c.Fights > 0)
     |> List.sortByDescending(fun c -> c.Profit)
 
 let addOrUpdateChamp (champ:Champ) =
