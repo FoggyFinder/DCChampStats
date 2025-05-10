@@ -266,26 +266,6 @@ let refreshIPFS() =
             storage.SetLastTrackedTraitSwap round
     )
 
-let refreshHordeLevels() =
-    let lastTracked = storage.GetLastTrackedHordeXpChangesDateTime()
-    let dt = DateTime.Now
-    let newTxs =
-        match lastTracked with
-        | None ->
-            Blockchain.getAssetsLevelsAfter None
-        | Some dt ->
-            Blockchain.getAssetsLevelsAfter (Some(dt))
-        |> Seq.toArray
-    newTxs
-    |> Seq.iter(fun (assetId, xp) ->
-        storage.TryGetChamp assetId
-        |> Option.iter(fun champ ->
-            { Champ = champ; Xp = xp }
-            |> storage.AddOrUpdateChampHorde
-        )
-    )
-    storage.SetLastTrackedHordeXpChangesDateTime dt
-
 let getChampsForWallet(wallet:string) =
     getAssets wallet
     |> Seq.filter(fun m -> allChamps.Contains m.AssetId)
@@ -352,6 +332,26 @@ let getBattles() = storage.GetAllBattles()
 let battlesWithoutTimestamp() = storage.BattlesWithoutTimestamp()
 let latestTrackedBattleDT() = storage.GetLastTrackedBattleDateTime()
 let setLatestTrackedBattleDT = storage.SetLastTrackedBattleDateTime
+
+let refreshHordeLevels() =
+    let lastTracked = storage.GetLastTrackedHordeXpChangesDateTime()
+    let dt = DateTime.Now
+    let newTxs =
+        match lastTracked with
+        | None ->
+            Blockchain.getAssetsLevelsAfter None
+        | Some dt ->
+            Blockchain.getAssetsLevelsAfter (Some(dt))
+        |> Seq.toArray
+    newTxs
+    |> Seq.iter(fun (assetId, xp) ->
+        getChamp assetId
+        |> Option.iter(fun champ ->
+            { Champ = champ; Xp = xp }
+            |> storage.AddOrUpdateChampHorde
+        )
+    )
+    storage.SetLastTrackedHordeXpChangesDateTime dt
 
 let getAllChampsHorde() =
     storage.GetAllChampsHorde()

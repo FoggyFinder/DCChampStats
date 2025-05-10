@@ -4,7 +4,7 @@ type DbKeys =
     | LastTrackedBattle
     | LastTrackedTraitSwap
     | LastTrackedBattleDateTime2
-    | LastTrackedHordeXpChanges
+    | LastTrackedHordeXpChanges2
 
 [<RequireQualifiedAccess>]
 module internal SQL =
@@ -165,7 +165,7 @@ type SqliteStorage(cs: string)=
     member _.GetLastTrackedHordeXpChangesDateTime() =
         use conn = new SqliteConnection(cs)
         Db.newCommand SQL.GetValueByKey conn
-        |> Db.setParams [ "key", SqlType.String (DbKeys.LastTrackedHordeXpChanges.ToString()) ]
+        |> Db.setParams [ "key", SqlType.String (DbKeys.LastTrackedHordeXpChanges2.ToString()) ]
         |> Db.query (fun rd -> rd.ReadDateTime "Value")
         |> List.tryHead
  
@@ -214,7 +214,7 @@ type SqliteStorage(cs: string)=
         use conn = new SqliteConnection(cs)
         Db.newCommand SQL.SetKeyValue conn
         |> Db.setParams [
-            "key", SqlType.String (DbKeys.LastTrackedHordeXpChanges.ToString())
+            "key", SqlType.String (DbKeys.LastTrackedHordeXpChanges2.ToString())
             "value", SqlType.DateTime dt
         ]
         |> Db.exec    
