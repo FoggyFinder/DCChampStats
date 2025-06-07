@@ -6,6 +6,7 @@ open Algorand.Indexer
 open System.Net.Http
 open Newtonsoft.Json.Linq
 open Champs.Core
+open System.Buffers.Binary
 
 // https://algonode.io/api/#free-as-in--algorand-api-access
 let ALGOD_API_ADDR = "https://mainnet-idx.algonode.cloud"
@@ -89,13 +90,23 @@ let readJson (uri:string) =
         let! content = response.Content.ReadAsStringAsync() |> Async.AwaitTask
         return content
     } |> Async.RunSynchronously
-
+let battleKey = System.Text.ASCIIEncoding.ASCII.GetBytes("Battle")
 let getBattle (battleNum: uint64) =
-    let uri = $"https://mainnet-idx.algonode.cloud/v2/applications/{ArenaContract}/box?name=str:Battle{battleNum}"
+    let name =
+        if battleNum < 1761UL then $"str:Battle{battleNum}"
+        else
+            let buffer = Array.zeroCreate 8
+            let span = new Span<byte>(buffer)
+            BinaryPrimitives.WriteUInt64BigEndian(span, battleNum)
+            let resultArr = Array.append battleKey buffer
+            let boxName = resultArr |> System.Convert.ToBase64String
+            $"b64:{Uri.EscapeDataString(boxName)}"
+    let uri = $"https://mainnet-idx.algonode.cloud/v2/applications/{ArenaContract}/box?name={name}"
     try 
         readJson uri
         |> Utils.battleFromString battleNum
-    with _ -> None
+    with _ ->
+        None
 
 let getBoxBattles (start: uint64) (end': uint64) = 
     seq { for i in [start..end'] -> getBattle i }
