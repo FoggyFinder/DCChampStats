@@ -64,6 +64,17 @@ let getBattlesDateTimes(afterTimeOpt:DateTime option) =
                 match txT with
                 | "writeBattle" -> args[1] |> System.Text.ASCIIEncoding.ASCII.GetString |> Some
                 | "fight" when args.Length = 5 -> args[2] |> System.Text.ASCIIEncoding.ASCII.GetString |> Some
+                | "fight" when args.Length = 3 ->
+                    tx.GlobalStateDelta
+                    |> Seq.tryPick(fun edkv ->
+                        let key = 
+                            System.Convert.FromBase64String(edkv.Key)
+                            |> System.Text.ASCIIEncoding.ASCII.GetString
+                        if key = "battleNum" then
+                            edkv.Value.Uint
+                            |> Option.ofNullable
+                            |> Option.map string
+                        else None)
                 | _ -> None
                 |> Option.bind(fun battleStr ->
                     battleStr.Replace("Battle", "")
