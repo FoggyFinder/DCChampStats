@@ -73,7 +73,7 @@ let getBattlesDateTimes(afterTimeOpt:DateTime option) =
                         if key = "battleNum" then
                             edkv.Value.Uint
                             |> Option.ofNullable
-                            |> Option.map string
+                            |> Option.map (fun bn -> string (bn - 1UL))
                         else None)
                 | _ -> None
                 |> Option.bind(fun battleStr ->
