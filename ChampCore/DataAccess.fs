@@ -110,7 +110,7 @@ module internal SQL =
     "
 
     let GetBattlesWithoutTimestamp = "
-        SELECT BattleNum FROM Battle WHERE Timestamp IS NULL OR BattleNum >= 1761
+        SELECT BattleNum FROM Battle WHERE Timestamp IS NULL
     "
 
     let GetAllBattles = "
